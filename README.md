@@ -2,6 +2,8 @@
 
 ## Get Started
 
+The other datasets can be found at [Zenodo](https://doi.org/10.5281/zenodo.20393563).
+
 ### Required libraries
 
 If you wish to run the entire pipeline of code, some libraries must be installed in your environment:
