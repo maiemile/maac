@@ -2,7 +2,7 @@
 
 ## Get Started
 
-The other datasets can be found at [Zenodo](https://doi.org/10.5281/zenodo.20393563).
+The other datasets can be found on [Zenodo](https://doi.org/10.5281/zenodo.20393563).
 
 ### Required libraries
 
