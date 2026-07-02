@@ -7,6 +7,7 @@ import random
 from multiprocessing import Pool, cpu_count
 from pathlib import Path
 import logging
+import utils
 
 import numpy as np
 
@@ -21,11 +22,11 @@ from desdeo.emo.operators.crossover import (SimulatedBinaryCrossover, BlendAlpha
 from desdeo.emo.operators.termination import MaxEvaluationsTerminator
 from desdeo.tools.patterns import Publisher
 from desdeo.emo.operators.selection import (
-    NSGAIII_select,
+    NSGA3Selector,
     RVEASelector,
     ReferenceVectorOptions,
     ParameterAdaptationStrategy,
-    IBEA_Selector
+    IBEASelector
 )
 from desdeo.emo.operators.generator import RandomGenerator
 from desdeo.problem.schema import (
@@ -40,7 +41,7 @@ from desdeo.tools.utils import repair
 
 
 # dictionaries to fetch classes of operators from DESDEO or problems from separate files
-algorithms = {"nsga3": NSGAIII_select, "rvea": RVEASelector, "ibea": IBEA_Selector}
+algorithms = {"nsga3": NSGA3Selector, "rvea": RVEASelector, "ibea": IBEASelector}
 crossovers = {"SBX": SimulatedBinaryCrossover, "Balpha": BlendAlphaCrossover, "Single": SingleArithmeticCrossover, 
               "Local": LocalCrossover}
 mutations = {"BPM": BoundedPolynomialMutation, "MPTM": MPTMutation, "NUM": NonUniformMutation, "PM": PowerMutation}
@@ -57,33 +58,8 @@ logger = logging.getLogger(__name__)
 def get_experiments():
 
     # all the problems instances
-    problem_instances = [
-        # DTLZ problems (3, 4, 6 and 9 objectives, 4 * 7 = 28 instances)
-        ["dtlz1", 7, 3],["dtlz2", 10, 3],["dtlz3", 10, 3],["dtlz4", 10, 3],["dtlz5", 10, 3],["dtlz6", 10, 3],["dtlz7", 10, 3],
-        ["dtlz1", 11, 4],["dtlz2", 15, 4],["dtlz3", 15, 4],["dtlz4", 15, 4],["dtlz5", 15, 4],["dtlz6", 15, 4],["dtlz7", 15, 4], #DTLZ5-7 with 4 objectives doesn't work, "not implemented yet" in pymoo
-        ["dtlz1", 11, 6],["dtlz2", 15, 6],["dtlz3", 15, 6],["dtlz4", 15, 6],["dtlz5", 15, 6],["dtlz6", 15, 6],["dtlz7", 15, 6],
-        ["dtlz1", 11, 9],["dtlz2", 15, 9],["dtlz3", 15, 9],["dtlz4", 15, 9],["dtlz5", 15, 9],["dtlz6", 15, 9],["dtlz7", 15, 9],
-
-        # WFG problems (3, 4, 6 and 9 objectives, 4 * 9 = 36 instances)
-        ["wfg1", 10, 3],["wfg2", 10, 3],["wfg3", 10, 3],["wfg4", 10, 3],["wfg5", 10, 3],["wfg6", 10, 3],["wfg7", 10, 3],["wfg8", 10, 3],["wfg9", 10, 3],
-        ["wfg1", 15, 4],["wfg2", 14, 4], ["wfg3", 14, 4],["wfg4", 15, 4],["wfg5", 15, 4],["wfg6", 15, 4],["wfg7", 15, 4],["wfg8", 15, 4],["wfg9", 15, 4], #WFG2 and WFG3 require an even number of decision variables
-        ["wfg1", 15, 6],["wfg2", 14, 6], ["wfg3", 14, 6],["wfg4", 15, 6],["wfg5", 15, 6],["wfg6", 15, 6],["wfg7", 15, 6],["wfg8", 15, 6],["wfg9", 15, 6],
-        ["wfg1", 18, 9],["wfg2", 18, 9], ["wfg3", 18, 9],["wfg4", 18, 9],["wfg5", 18, 9],["wfg6", 18, 9],["wfg7", 18, 9],["wfg8", 18, 9],["wfg9", 18, 9],
-
-        # RE problems, 8 instances
-        ["re31", 3, 3],
-        ["re32", 4, 3],
-        ["re33", 4, 3],
-        ["re34", 5, 3],
-        ["re37", 4, 3],
-        #["re41", 7, 4], # not included due to unexpected results while calculating the approximate Pareto front
-        #["re42", 6, 4],
-        #["re61", 3, 6], 
-    ]
-
-    algos = ["nsga3", "rvea", "ibea"]
-    cxs = ["SBX", "Balpha", "Single", "Local"]
-    mxs = ["BPM", "MPTM", "NUM", "PM"]
+    problem_instances = utils.get_problem_instances()
+    algos, cxs, mxs = utils.get_all_configuration_options()
 
     #####################################################3
 

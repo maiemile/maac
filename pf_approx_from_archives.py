@@ -19,9 +19,7 @@ import utils as util
 
 ######################################################
 
-algos = ["nsga3", "rvea", "ibea"]
-cxs = ["SBX", "Balpha", "Single", "Local"]
-mxs = ["BPM", "MPTM", "NUM", "PM"]
+algos, cxs, mxs = util.get_all_configuration_options()
 
 def calc_pf_approx(prob):
     prob_name_print = prob

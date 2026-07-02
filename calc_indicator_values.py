@@ -12,10 +12,8 @@ import utils as util
 
 # all the problems instances
 problem_instances = util.get_problem_instances()
+algos, cxs, mxs = util.get_all_configuration_options()
 
-algos = ["nsga3", "rvea", "ibea"]
-cxs = ["SBX", "Balpha", "Single", "Local"]
-mxs = ["BPM", "MPTM", "NUM", "PM"]
 
 def get_experiments():
 
@@ -23,6 +21,7 @@ def get_experiments():
     prob_and_config_permutations = [prob + [a, cx, mx] for prob in problem_instances for a in algos for cx in cxs for mx in mxs]
     
     return prob_and_config_permutations
+
 
 def calculate_indicator_values(config, ideal_vector, nadir_vector, pf_approx):
 
@@ -58,6 +57,7 @@ def calculate_indicator_values(config, ideal_vector, nadir_vector, pf_approx):
     prog_log.close()
 
     return
+
 
 def calc_ind_val_problem(prob_name, n_vars, n_objs, algo, cx, mx):
     # create the unique problem name plus configuration

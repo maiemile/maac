@@ -2,6 +2,7 @@
 
 import matplotlib.pyplot as plt
 
+
 def create_igd_array_and_dict(file_name):
     igd_dict = {}
     igd_array = []
@@ -27,7 +28,12 @@ def create_igd_array_and_dict(file_name):
     return igd_array, igd_dict, igd_array_regr
 
 
-def get_problem_instances():
+def get_problem_instances() -> list[list]:
+    '''
+    Returns a list of every individual problem instance.
+    Each problem instance corresponds to one list within the list and these lists contain
+    the name of the problem, the number of decision variables and the number of objective functions, in this order. 
+    '''
     # all the problems instances
     problem_instances = [
         # DTLZ problems (3, 4, 6 and 9 objectives, 4 * 7 = 28 instances)
@@ -48,6 +54,18 @@ def get_problem_instances():
     return problem_instances
 
 
+def get_all_configuration_options() -> list[list]:
+    '''
+    Returns a dictionary with each key corresponding to a configuration parameter and the value to the list of values for that parameter
+
+    '''
+    algos = ["nsga3", "rvea", "ibea"]
+    cxs = ["SBX", "Balpha", "Single", "Local"]
+    mxs = ["BPM", "MPTM", "NUM", "PM"]
+
+    return algos, cxs, mxs
+
+
 def get_all_configurations() -> list[str]:
     '''
     Returns a list of all configurations used in the following string format "algorithm-crossover-mutation"
@@ -55,9 +73,7 @@ def get_all_configurations() -> list[str]:
     :return: All configurations in the following format: "algorithm-crossover-mutation"
     :rtype: list[str]
     '''
-    algos = ["nsga3", "rvea", "ibea"]
-    cxs = ["SBX", "Balpha", "Single", "Local"]
-    mxs = ["BPM", "MPTM", "NUM", "PM"]
+    algos, cxs, mxs = get_all_configuration_options()
 
     # rvea-NUM is ignored due to too many errors
     configs = [a+"-"+cx+"-"+mx for a in algos for cx in cxs for mx in mxs if a != 'rvea' or mx != 'NUM']

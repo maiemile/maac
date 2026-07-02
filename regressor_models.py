@@ -21,12 +21,11 @@ plt.style.use('science')
 
 # all the problems instances
 problem_instances = util.get_problem_instances()
+algos, crossovers, mutations = util.get_all_configuration_options()
 
-algos = ['nsga3', 'rvea', 'ibea']
-crossovers = ['SBX', 'Balpha', 'Local', 'Single']
-mutations = ['BPM', 'NUM', 'PM', 'MPTM']
 cols_to_drop = ['problem', 'igd_plus', 'ic.eps_ratio_MIN', 'ic.eps_ratio_AVG', 'ic.eps_ratio_SD']
 feat_sets = ['min', 'max', 'avg', 'sd', 'nds', 'moo']
+
 
 def calculate_r2_scores():
     '''
