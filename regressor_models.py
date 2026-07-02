@@ -27,6 +27,11 @@ algos, crossovers, mutations = util.get_all_configuration_options()
 cols_to_drop = ['problem', 'igd_plus', 'ic.eps_ratio_MIN', 'ic.eps_ratio_AVG', 'ic.eps_ratio_SD']
 feat_sets = ['min', 'max', 'avg', 'sd', 'nds', 'moo']
 
+# IMPORTANT!!!
+# Set this to True if you are using already trained models,
+# False otherwise!
+load_from_files = True
+
 
 def calculate_r2_scores():
     '''
@@ -139,7 +144,7 @@ def prepare_data(df, test_problems, scaler, enc, load_features=False):
     y_test = test_set[y_cols]
 
     # if we want to load pre-existing features for the model
-    # TODO: this should work if there is another model available/use model defined by user
+    # TODO: this should be improved to work if there is another model available/use model defined by user
     if load_features:
         with open(f'models\\Random forest_regressor.pkl', 'rb') as f:
             best_estimator = pickle.load(f)
@@ -206,7 +211,7 @@ def get_optimal_configs():
 
 
 def create_confusion_matrices(y_test, y_pred_test, model_name):
-    # Confusion matrix or each output
+    # Confusion matrix for each output
     fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(12,4))
     axes = [ax1, ax2, ax3]
     print(y_test, y_pred_test)
@@ -325,27 +330,22 @@ def run_full_regression_model(df, test_problems, model, data, scaler, enc, selec
 
 if __name__ == "__main__":
 
-    # IMPORTANT!!!
-    # Set this to True if you are using already trained models,
-    # False otherwise!
-    load_from_files = True
-
     # Make sure the folders where the figures are saved exist
     # if not, create the corresponding folders
+    # TODO: eventually, this could be included in the "main.py" file
     if not os.path.exists("figures\\confusion_matrices"):
         os.makedirs("figures\\confusion_matrices")
     if not os.path.exists("figures\\perf_prof"):
         os.makedirs("figures\\perf_prof")
 
-    test_problems = ['dtlz1-4obj', 'dtlz2-3obj', 'dtlz3-9obj', 'dtlz5-6obj', 'dtlz7-9obj', 
-                     'wfg1-4obj', 'wfg3-3obj', 'wfg4-9obj', 'wfg6-6obj', 'wfg8-9obj'
-                     , 're31-3obj', 're32-3obj', 're33-3obj', 're34-3obj', 're37-3obj']
-
+    # fetch the names of problems used in the testing phase
+    test_problems = util.get_test_problems()
 
     igd_labels_2 = ['problem', 'algorithm', 'crossover', 'mutation', 'igd', 'igd_plus', 'objectives', 'variables']
     enc = OneHotEncoder(handle_unknown='ignore')
     scaler = StandardScaler()
 
+    # obtain the data, do necessary preprocessing
     _, igd_dict, igd_array_regr = util.create_igd_array_and_dict('indicator_data\\igd_values_log.txt')
     labels_regr = util.get_labels_from_file(igd_labels_2, feat_sets)
     dataframe = get_dataframe(igd_array_regr, labels_regr, feat_sets, problem_instances)

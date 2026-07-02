@@ -1,6 +1,7 @@
 # code by @maiemile
 
 import pickle
+import os
 import numpy as np
 import pandas as pd
 import utils as util
@@ -387,6 +388,12 @@ def print_decision_trees():
 
 
 if __name__ == "__main__":
+
+    if not os.path.exists("figures\\confusion_matrices"):
+        os.makedirs("figures\\confusion_matrices")
+    if not os.path.exists("figures\\perf_prof"):
+        os.makedirs("figures\\perf_prof")
+
     igd_array, igd_dict, _ = util.create_igd_array_and_dict('indicator_data\\igd_values_log.txt')
 
     Y = load_response_variables()

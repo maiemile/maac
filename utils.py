@@ -53,6 +53,7 @@ def get_problem_instances() -> list[list]:
     ]
     return problem_instances
 
+
 def get_test_problems() -> list[str]:
     '''
     Returns a list of all test problems (only string format)
@@ -91,8 +92,12 @@ def get_all_configurations() -> list[str]:
 
 
 def get_labels_from_file(labels: list[str], feat_sets: list[str]) -> list[str]:
+    '''
+    Obtain all ELA feature names from a file.
+    Returns a list of strings.
+    '''
     for f_set in feat_sets:
-        # read the ELA feature names from the files
+        # TODO: use any file instead of hardcoded one
         with open(f'ela_features\\dtlz1-3obj_{f_set}.txt', 'r') as file:
             for line in file:
                 split_line = line.split() 
