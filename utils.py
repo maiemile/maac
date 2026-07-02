@@ -188,7 +188,11 @@ def create_performance_profile_plot(igd_dict: dict, igd_values: list[float], con
     :param igd_values: IGD values the configurator model achieved
     :param configs: Configurations to plot in the graph
     :param test_problems: A list of problems used
+    :param fig_name: Name of the created figure
+    :param config_labels: Additional labels of configuration in addition to "configs"
+    :param font_size: Controls the font size of the legend
     """
+    
     import perfprof
 
     data_array = get_dataframe_for_performance_profile(igd_dict, configs, test_problems, igd_values, config_labels).to_numpy()

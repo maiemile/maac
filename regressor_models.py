@@ -8,6 +8,7 @@ from pathlib import Path
 import pickle
 import matplotlib.pyplot as plt
 import scienceplots
+import os
 
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import (r2_score, mean_squared_error, mean_squared_log_error, mean_absolute_percentage_error
@@ -137,6 +138,7 @@ def prepare_data(df, test_problems, scaler, enc, load_features=False):
     y_test = test_set[y_cols]
 
     # if we want to load pre-existing features for the model
+    # TODO: this should work if there is another model available/use model defined by user
     if load_features:
         with open(f'models\\Random forest_regressor.pkl', 'rb') as f:
             best_estimator = pickle.load(f)
@@ -235,6 +237,7 @@ def create_confusion_matrices(y_test, y_pred_test, model_name):
     ax3.set_title('Mutation operator')
     ax2.set_ylabel('')
     ax3.set_ylabel('')
+    
     plt.savefig(f'figures\\confusion_matrices\\{model_name}_regr.pdf')
     plt.show()
 
@@ -324,7 +327,14 @@ if __name__ == "__main__":
     # IMPORTANT!!!
     # Set this to True if you are using already trained models,
     # False otherwise!
-    load_from_files = False
+    load_from_files = True
+
+    # Make sure the folders where the figures are saved exist
+    # if not, create the corresponding folders
+    if not os.path.exists("figures\\confusion_matrices"):
+        os.makedirs("figures\\confusion_matrices")
+    if not os.path.exists("figures\\perf_prof"):
+        os.makedirs("figures\\perf_prof")
 
     test_problems = ['dtlz1-4obj', 'dtlz2-3obj', 'dtlz3-9obj', 'dtlz5-6obj', 'dtlz7-9obj', 
                      'wfg1-4obj', 'wfg3-3obj', 'wfg4-9obj', 'wfg6-6obj', 'wfg8-9obj'
