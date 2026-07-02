@@ -53,6 +53,15 @@ def get_problem_instances() -> list[list]:
     ]
     return problem_instances
 
+def get_test_problems() -> list[str]:
+    '''
+    Returns a list of all test problems (only string format)
+    '''
+    test_problems = ['dtlz1-4obj', 'dtlz2-3obj', 'dtlz3-9obj', 'dtlz5-6obj', 'dtlz7-9obj', 
+                         'wfg1-4obj', 'wfg3-3obj', 'wfg4-9obj', 'wfg6-6obj', 'wfg8-9obj'
+                         , 're31-3obj', 're32-3obj', 're33-3obj', 're34-3obj', 're37-3obj']
+    return test_problems
+
 
 def get_all_configuration_options() -> list[list]:
     '''
@@ -192,7 +201,7 @@ def create_performance_profile_plot(igd_dict: dict, igd_values: list[float], con
     :param config_labels: Additional labels of configuration in addition to "configs"
     :param font_size: Controls the font size of the legend
     """
-    
+
     import perfprof
 
     data_array = get_dataframe_for_performance_profile(igd_dict, configs, test_problems, igd_values, config_labels).to_numpy()

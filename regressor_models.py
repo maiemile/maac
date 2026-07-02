@@ -30,7 +30,8 @@ feat_sets = ['min', 'max', 'avg', 'sd', 'nds', 'moo']
 
 def calculate_r2_scores():
     '''
-    Calculates the R2 scores for regression models predicting the IGD value
+    Calculates the R2 scores for regression models predicting the IGD value.
+    Saves the results in a .txt file.
     '''
     igd_labels = ['problem', 'config', 'igd', 'igd_plus', 'objectives', 'variables']
 
