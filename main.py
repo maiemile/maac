@@ -12,4 +12,4 @@ if not os.path.exists("figures\\perf_prof"):
     os.makedirs("figures\\perf_prof")
 
 classification_models.do()
-#regression_models.do()
+regressor_models.do()

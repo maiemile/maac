@@ -48,9 +48,9 @@ def load_response_variables(problems_to_ignore):
 
 def preprocess_data(df_original):
     # Split the data into X and y (input and response variables)
-    y_cols = ['algo', 'crossover', 'mutation']
-    y = df_original[y_cols]
-    y_cols = y_cols + ['problem', 'ic.eps_ratio_MIN', 'ic.eps_ratio_AVG', 'ic.eps_ratio_SD']
+    y_cols_original = ['algo', 'crossover', 'mutation']
+    y = df_original[y_cols_original]
+    y_cols = y_cols_original + ['problem', 'ic.eps_ratio_MIN', 'ic.eps_ratio_AVG', 'ic.eps_ratio_SD']
 
     # Drop the following column because it contains several -infinite features
     df = df_original.drop(columns=y_cols)
@@ -58,15 +58,16 @@ def preprocess_data(df_original):
     # LabelEncoder is fine for converting the response variables in classification models
     # even if they are categorical and unordinal
     # each output requires a separate encoder as they have different value sets
-    enc1 = LabelEncoder().fit(y['algo'])
-    enc2 = LabelEncoder().fit(y['crossover'])
-    enc3 = LabelEncoder().fit(y['mutation'])
+    cols = []
+    encs = []
+    for col in y_cols_original:
+        enc = LabelEncoder().fit(y[col])
+        encs.append(enc)
 
-    y1_enc = enc1.transform(y['algo'])
-    y2_enc = enc2.transform(y['crossover'])
-    y3_enc = enc3.transform(y['mutation'])
+        y1_enc = enc.transform(y[col])
+        cols.append(y1_enc)
 
-    y = pd.DataFrame(np.column_stack([y1_enc, y2_enc, y3_enc]))
+    y = pd.DataFrame(np.column_stack(cols))
 
     # print all columns with null values
     nan_cols = [i for i in df.columns if df[i].isnull().any()]
@@ -101,7 +102,7 @@ def preprocess_data(df_original):
     y_train = y.drop(test_indexes)
     y_test = y.iloc[test_indexes]
 
-    return X_train, X_test, y_train, y_test, y, [enc1,enc2,enc3]
+    return X_train, X_test, y_train, y_test, y, encs
 
 
 def multioutput_macro_f1(y_true, y_pred) -> float:
@@ -395,7 +396,7 @@ def print_decision_trees() -> None:
             plt.show()
 
 
-def do(model_dict: dict = None, problems_to_ignore: list[str] = []):
+def do(model_dict: dict = None, problems_to_ignore: list[str] = []) -> None:
 
     igd_array, igd_dict, _ = util.create_igd_array_and_dict('indicator_data\\igd_values_log.txt')
 

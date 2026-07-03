@@ -170,6 +170,45 @@ def prepare_data(df, test_problems, scaler, enc, load_features=False):
 
     return [X_train, X_test, y_train, y_test], selected_columns
 
+def get_model_data():
+    # models and their parameter grid for grid search with cross-validation
+    regr_rf = RandomForestRegressor(random_state=0)
+    regr_dt = DecisionTreeRegressor(random_state=0) 
+    regr_xg = xgb.XGBRegressor(random_state=0)
+    regr_nn = MLPRegressor(random_state=0, max_iter=500)
+    param_grid_rf = {
+        "n_estimators": [10,50,100,200],
+        "criterion": ["squared_error", "friedman_mse", "poisson"],
+        "max_depth": [None, 2,4,7],
+        "max_features": [None, "sqrt", "log2"],
+    }
+    param_grid_dt = {
+        "criterion": ["squared_error", "friedman_mse", "poisson"],
+        "max_depth": [None, 3,5,10],
+        "max_features": [None, "sqrt", "log2"],
+        "splitter": ["best", "random"]
+    }
+    param_grid_xg = {
+        "max_depth": [6,8,10,12],
+        "subsample": [0.5, 0.75, 1],
+        "eta": [0.01, 0.1, 0.3, 0.6],
+        "n_estimators": [10,50,100,200],
+    }
+    param_grid_nn = {
+        "hidden_layer_sizes": [(30,10,6), (20,12,4), (50, 30, 10, 4), (16,6), (12,4)],
+        "solver": ["adam", "lbfgs"],
+        "learning_rate": ["constant", "adaptive"],
+        "activation": ["logistic", "relu"]
+    }
+
+    model_dict = {
+        "Random forest": [regr_rf, param_grid_rf], 
+        "Decision tree": [regr_dt, param_grid_dt], 
+        "XGBoost": [regr_xg, param_grid_xg],
+        "Neural network": [regr_nn, param_grid_nn]
+    }
+    
+    return model_dict
 
 def optimize_models(regr, X_train, y_train, param_grid):
     kfold = KFold(n_splits=10, shuffle=True, random_state=42)
@@ -191,7 +230,7 @@ def optimize_models(regr, X_train, y_train, param_grid):
     return best_estimator
 
 
-def get_optimal_configs():
+def get_optimal_configs(problems_to_ignore):
     Y = {}
 
     # load the response variables (the optimal configuration for each problem)
@@ -200,7 +239,7 @@ def get_optimal_configs():
             split_line = line.split() 
             problem = split_line[0]
             # ignore the troublesome problems
-            if problem in ["re42-4obj", "re61-6obj"]:
+            if problem in problems_to_ignore:
                 continue
             configuration = split_line[1]
             split_config = configuration.split('-')
@@ -248,7 +287,8 @@ def create_confusion_matrices(y_test, y_pred_test, model_name):
 
 
 
-def run_full_regression_model(df, test_problems, model, data, scaler, enc, selected_columns, param_grid, model_name, load_file=False):
+def run_full_regression_model(df, igd_dict, test_problems, model, data, scaler, enc, selected_columns, param_grid, model_name, problems_to_ignore,
+                              load_file=False):
 
     test_set = df[df['problem'].str.contains('|'.join(test_problems), na=False)]
     y_cols = ['igd']
@@ -282,7 +322,7 @@ def run_full_regression_model(df, test_problems, model, data, scaler, enc, selec
     problems_and_configs = []
     igd_values = []
     
-    optimal_configs = get_optimal_configs()
+    optimal_configs = get_optimal_configs(problems_to_ignore)
 
     optimal_configs_test = []
     predicted_configs_test = []
@@ -327,8 +367,7 @@ def run_full_regression_model(df, test_problems, model, data, scaler, enc, selec
     return mse, igd_values
 
 
-if __name__ == "__main__":
-
+def do(model_dict: dict = None, problems_to_ignore: list[str] = []) -> None:
     # fetch the names of problems used in the testing phase
     test_problems = util.get_test_problems()
 
@@ -342,42 +381,9 @@ if __name__ == "__main__":
     dataframe = get_dataframe(igd_array_regr, labels_regr, feat_sets, problem_instances)
     data, selected_features = prepare_data(dataframe, test_problems, scaler, enc, load_features=load_models)
     
-    # models and their parameter grid for grid search with cross-validation
-    regr_rf = RandomForestRegressor(random_state=0)
-    regr_dt = DecisionTreeRegressor(random_state=0) 
-    regr_xg = xgb.XGBRegressor(random_state=0)
-    regr_nn = MLPRegressor(random_state=0, max_iter=500)
-    param_grid_rf = {
-        "n_estimators": [10,50,100,200],
-        "criterion": ["squared_error", "friedman_mse", "poisson"],
-        "max_depth": [None, 2,4,7],
-        "max_features": [None, "sqrt", "log2"],
-    }
-    param_grid_dt = {
-        "criterion": ["squared_error", "friedman_mse", "poisson"],
-        "max_depth": [None, 3,5,10],
-        "max_features": [None, "sqrt", "log2"],
-        "splitter": ["best", "random"]
-    }
-    param_grid_xg = {
-        "max_depth": [6,8,10,12],
-        "subsample": [0.5, 0.75, 1],
-        "eta": [0.01, 0.1, 0.3, 0.6],
-        "n_estimators": [10,50,100,200],
-    }
-    param_grid_nn = {
-        "hidden_layer_sizes": [(30,10,6), (20,12,4), (50, 30, 10, 4), (16,6), (12,4)],
-        "solver": ["adam", "lbfgs"],
-        "learning_rate": ["constant", "adaptive"],
-        "activation": ["logistic", "relu"]
-    }
+    if model_dict == None:
+        model_dict = get_model_data()
 
-    model_dict = {
-        "Random forest": [regr_rf, param_grid_rf], 
-        "Decision tree": [regr_dt, param_grid_dt], 
-        "XGBoost": [regr_xg, param_grid_xg],
-        "Neural network": [regr_nn, param_grid_nn]
-        }
     configs = ['ibea-SBX-NUM', 'nsga3-SBX-BPM']
     all_configs = util.get_all_configurations()
 
@@ -392,8 +398,8 @@ if __name__ == "__main__":
         print("-"*10, model_name, "-"*10)
         
         # run all of the regression models, either with hyperparameter optimization or using existing models
-        mse, igd_values = run_full_regression_model(dataframe, test_problems, model, data, scaler, enc, 
-                                                    selected_features, param_grid, model_name, load_file=load_models)
+        mse, igd_values = run_full_regression_model(dataframe, igd_dict, test_problems, model, data, scaler, enc, 
+                                                    selected_features, param_grid, model_name, problems_to_ignore, load_file=load_models)
         util.create_performance_profile_plot(igd_dict, igd_values, configs, test_problems, model_name + '_regressor')
         igd_value_sets.append(igd_values)
         config_labels.append(model_name + ' regressor')
@@ -405,4 +411,9 @@ if __name__ == "__main__":
         print(model, mse_value)
 
     calculate_r2_scores()
+
+
+if __name__ == "__main__":
+    do()
+    
     
