@@ -44,7 +44,7 @@ If you wish to retrain the configurator models instead of testing existing model
 
 ### (Optional: Use Puhti for expensive calculations)
 
-UPDATE: Puhti will be decommissioned by the end of July 2026. New scripts for Roihu might be added here later.
+UPDATE: Puhti will be decommissioned by the end of July 2026. New scripts for [Roihu](https://docs.csc.fi/computing/systems-roihu/) might be added here later.
 
 Two shell script files for the Puhti supercomputer at CSC are included in this repository:
 - experimental_script.sh: runs the main script for running EA configurations on problems
