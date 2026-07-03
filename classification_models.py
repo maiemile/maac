@@ -1,14 +1,11 @@
 # code by @maiemile
 
 import pickle
-import os
 import numpy as np
 import pandas as pd
 import utils as util
-import igd_analysis as igda
 import xgboost as xgb
 import matplotlib.pyplot as plt
-import configparser
 from pathlib import Path
 import scienceplots
 plt.style.use(['science','no-latex'])
@@ -30,7 +27,8 @@ test_problems = util.get_test_problems()
 # Fetch the information on whether to load pre-existing models (True) or train new ones (False)
 load_models = util.load_files_config()
 
-def load_response_variables():
+
+def load_response_variables(problems_to_ignore):
     Y = []
 
     # load the response variables (the optimal configuration for each problem)
@@ -39,7 +37,7 @@ def load_response_variables():
             split_line = line.split() 
             problem = split_line[0]
             # ignore the troublesome problems
-            if problem in ["re42-4obj", "re61-6obj"]:
+            if problem in problems_to_ignore:
                 continue
             configuration = split_line[1]
             split_config = configuration.split('-')
@@ -47,18 +45,18 @@ def load_response_variables():
 
     return Y
 
-def preprocess_data(df_original, ):
+
+def preprocess_data(df_original):
     # Split the data into X and y (input and response variables)
     y_cols = ['algo', 'crossover', 'mutation']
     y = df_original[y_cols]
     y_cols = y_cols + ['problem', 'ic.eps_ratio_MIN', 'ic.eps_ratio_AVG', 'ic.eps_ratio_SD']
-    # Drop the following column because it contains several -infinite features
 
+    # Drop the following column because it contains several -infinite features
     df = df_original.drop(columns=y_cols)
 
     # LabelEncoder is fine for converting the response variables in classification models
     # even if they are categorical and unordinal
-
     # each output requires a separate encoder as they have different value sets
     enc1 = LabelEncoder().fit(y['algo'])
     enc2 = LabelEncoder().fit(y['crossover'])
@@ -106,13 +104,19 @@ def preprocess_data(df_original, ):
     return X_train, X_test, y_train, y_test, y, [enc1,enc2,enc3]
 
 
-def multioutput_macro_f1(y_true, y_pred):
+def multioutput_macro_f1(y_true, y_pred) -> float:
+    '''
+    Implement a multioutput Macro F1 score function.
+    Macro F1 score is calculated separately for each output,
+    and arithmetic mean is taken from these scores to get the final output.
+    '''
     # y_true, y_pred are arrays of shape (n_samples, n_outputs)
     per_output = []
     for i in range(y_true.shape[1]):
         # Use 'macro' to treat all classes equally per output
         per_output.append(f1_score(y_true.iloc[:, i], y_pred[:, i], average='macro', zero_division=0))
     return float(np.mean(per_output))
+
 
 def select_features(y, X_train, X_test, y_train):
     selected_features = []
@@ -216,6 +220,7 @@ def get_model_data():
     
     return model_dict
 
+
 def train_models(model_dict, scorer, X_train, y_train):
 
     best_estimators = {}
@@ -257,7 +262,8 @@ def train_models(model_dict, scorer, X_train, y_train):
 
     return best_estimators
 
-def evaluate_models(model_name, best_model, enc):
+
+def evaluate_models(model_name, best_model, enc, X_test, y_test, y):
     print("="*10 + model_name + "="*10)
     
     # Use the best model based on grid search to predict the test set response variables
@@ -317,12 +323,12 @@ def evaluate_models(model_name, best_model, enc):
     plt.savefig(f'figures\\confusion_matrices\\{model_name}_v2.pdf')
     plt.show()
 
-
     return y_pred_test
 
 
 def get_predicted_labels(y_pred_test, enc):
     # reverse transform the predicted labels into strings
+    # TODO: do this in a loop based on y_pred_test size
     y_pred_test_1 = enc[0].inverse_transform(y_pred_test[:,0])
     y_pred_test_2 = enc[1].inverse_transform(y_pred_test[:,1])
     y_pred_test_3 = enc[2].inverse_transform(y_pred_test[:,2])
@@ -334,7 +340,7 @@ def get_predicted_labels(y_pred_test, enc):
     return y_pred_test_df
 
 
-def get_predicted_igd_values(y_pred_test_df):
+def get_predicted_igd_values(y_pred_test_df, y_test, df_original, indexes, igd_dict):
     problems = []
     problems_and_configs = []
     igd_values = []
@@ -353,7 +359,7 @@ def get_predicted_igd_values(y_pred_test_df):
     return igd_values, problems
 
 
-def print_decision_trees():
+def print_decision_trees() -> None:
     from sklearn import tree
     from matplotlib.colors import ListedColormap, to_rgb
     model = "Decision tree"
@@ -389,16 +395,11 @@ def print_decision_trees():
             plt.show()
 
 
-if __name__ == "__main__":
-
-    if not os.path.exists("figures\\confusion_matrices"):
-        os.makedirs("figures\\confusion_matrices")
-    if not os.path.exists("figures\\perf_prof"):
-        os.makedirs("figures\\perf_prof")
+def do(model_dict: dict = None, problems_to_ignore: list[str] = []):
 
     igd_array, igd_dict, _ = util.create_igd_array_and_dict('indicator_data\\igd_values_log.txt')
 
-    Y = load_response_variables()
+    Y = load_response_variables(problems_to_ignore)
 
     labels = ['problem', 'algo', 'crossover', 'mutation', 'objectives', 'variables']
     feat_sets = ['min', 'max', 'avg', 'sd', 'nds', 'moo']
@@ -418,15 +419,16 @@ if __name__ == "__main__":
 
     # Custom scoring function based on Macro F1 score
     scorer = make_scorer(multioutput_macro_f1)
-    model_dict = get_model_data()
+    if model_dict == None:
+        model_dict = get_model_data()
     best_estimators = train_models(model_dict, scorer, X_train, y_train)
 
     igd_value_sets = []
     config_labels = []
     for model_name, best_model in best_estimators.items():
-        y_pred_test = evaluate_models(model_name, best_model, enc)
+        y_pred_test = evaluate_models(model_name, best_model, enc, X_test, y_test, y)
         y_pred_test_df = get_predicted_labels(y_pred_test, enc)
-        igd_values, testproblems = get_predicted_igd_values(y_pred_test_df)
+        igd_values, testproblems = get_predicted_igd_values(y_pred_test_df, y_test, df_original, indexes, igd_dict)
         configs = ['ibea-SBX-NUM', 'nsga3-SBX-BPM']
 
         # display a proper performance profile plot comparing the configurator against the above configurations
@@ -438,3 +440,5 @@ if __name__ == "__main__":
     util.create_performance_profile_plot(igd_dict, igd_value_sets, None, test_problems, 'classifiers', config_labels, font_size=6)   
 
 
+if __name__ == "__main__":
+    do()

@@ -329,15 +329,6 @@ def run_full_regression_model(df, test_problems, model, data, scaler, enc, selec
 
 if __name__ == "__main__":
 
-
-    # Make sure the folders where the figures are saved exist
-    # if not, create the corresponding folders
-    # TODO: eventually, this could be included in the "main.py" file
-    if not os.path.exists("figures\\confusion_matrices"):
-        os.makedirs("figures\\confusion_matrices")
-    if not os.path.exists("figures\\perf_prof"):
-        os.makedirs("figures\\perf_prof")
-
     # fetch the names of problems used in the testing phase
     test_problems = util.get_test_problems()
 
@@ -349,7 +340,7 @@ if __name__ == "__main__":
     _, igd_dict, igd_array_regr = util.create_igd_array_and_dict('indicator_data\\igd_values_log.txt')
     labels_regr = util.get_labels_from_file(igd_labels_2, feat_sets)
     dataframe = get_dataframe(igd_array_regr, labels_regr, feat_sets, problem_instances)
-    data, selected_features = prepare_data(dataframe, test_problems, scaler, enc, load_features=load_from_files)
+    data, selected_features = prepare_data(dataframe, test_problems, scaler, enc, load_features=load_models)
     
     # models and their parameter grid for grid search with cross-validation
     regr_rf = RandomForestRegressor(random_state=0)
@@ -402,7 +393,7 @@ if __name__ == "__main__":
         
         # run all of the regression models, either with hyperparameter optimization or using existing models
         mse, igd_values = run_full_regression_model(dataframe, test_problems, model, data, scaler, enc, 
-                                                    selected_features, param_grid, model_name, load_file=load_from_files)
+                                                    selected_features, param_grid, model_name, load_file=load_models)
         util.create_performance_profile_plot(igd_dict, igd_values, configs, test_problems, model_name + '_regressor')
         igd_value_sets.append(igd_values)
         config_labels.append(model_name + ' regressor')
