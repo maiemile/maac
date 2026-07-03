@@ -35,16 +35,16 @@ Best configurations in terms of IGD, IGD+, and HV can be quickly calculated per 
 
 ### Run and test configurator models
 
-Classification-based configurator models are run using the file configurator_model.ipynb.
+Classification-based configurator models are run using the file classification_models.py (alternatively, configurator_model.ipynb).
 Regression-based configurator models are run using the file regressor_models.py.
 These files include code for creating visualizations of the confusion matrices, performance profile plots and decision trees.
 R^2 scores of the regressor models can also be calculated in the file regressor_models.py.
 
-If you already have configurator models and wish to only test them without training new models, set the following variable values:
-- In configurator_model.ipynb: load_models = True
-- In regressor_models.py: load_from_files = True
+If you wish to retrain the configurator models instead of testing existing models, set the variable "load_models" in config.txt to False
 
 ### (Optional: Use Puhti for expensive calculations)
+
+UPDATE: Puhti will be decommissioned by the end of July 2026. New scripts for Roihu might be added here later.
 
 Two shell script files for the Puhti supercomputer at CSC are included in this repository:
 - experimental_script.sh: runs the main script for running EA configurations on problems
