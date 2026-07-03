@@ -8,6 +8,8 @@ import utils as util
 import igd_analysis as igda
 import xgboost as xgb
 import matplotlib.pyplot as plt
+import configparser
+from pathlib import Path
 import scienceplots
 plt.style.use(['science','no-latex'])
 
@@ -21,12 +23,12 @@ from sklearn.preprocessing import LabelEncoder, StandardScaler
 from sklearn.feature_selection import SelectKBest, f_classif
 from sklearn.neural_network import MLPClassifier
 
-# When load_models is set to True, pre-existing models will be used. Otherwise, new models will be trained with cross-validation
-load_models = True
-
 # all the problems instances
 problem_instances = util.get_problem_instances()
 test_problems = util.get_test_problems()
+
+# Fetch the information on whether to load pre-existing models (True) or train new ones (False)
+load_models = util.load_files_config()
 
 def load_response_variables():
     Y = []

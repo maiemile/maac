@@ -9,6 +9,7 @@ import pickle
 import matplotlib.pyplot as plt
 import scienceplots
 import os
+import configparser
 
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import (r2_score, mean_squared_error, mean_squared_log_error, mean_absolute_percentage_error
@@ -27,10 +28,8 @@ algos, crossovers, mutations = util.get_all_configuration_options()
 cols_to_drop = ['problem', 'igd_plus', 'ic.eps_ratio_MIN', 'ic.eps_ratio_AVG', 'ic.eps_ratio_SD']
 feat_sets = ['min', 'max', 'avg', 'sd', 'nds', 'moo']
 
-# IMPORTANT!!!
-# Set this to True if you are using already trained models,
-# False otherwise!
-load_from_files = True
+# Fetch the information on whether to load pre-existing models (True) or train new ones (False)
+load_models = util.load_files_config()
 
 
 def calculate_r2_scores():
@@ -329,6 +328,7 @@ def run_full_regression_model(df, test_problems, model, data, scaler, enc, selec
 
 
 if __name__ == "__main__":
+
 
     # Make sure the folders where the figures are saved exist
     # if not, create the corresponding folders

@@ -3,6 +3,21 @@
 import matplotlib.pyplot as plt
 
 
+def load_files_config() -> bool:
+    '''
+    Reads the config.txt file and returns the value of the "load_models" variable.
+    '''
+    import configparser
+    from pathlib import Path
+
+    # use the config file to determine whether to load configurator models from files or training new ones
+    config_parser = configparser.RawConfigParser()   
+    config_path = Path("config.txt")
+    config_parser.read(config_path)
+    load_from_files = config_parser.get('general', 'load_models')
+
+    return load_from_files
+
 def create_igd_array_and_dict(file_name):
     igd_dict = {}
     igd_array = []
