@@ -11,5 +11,8 @@ if not os.path.exists("figures\\confusion_matrices"):
 if not os.path.exists("figures\\perf_prof"):
     os.makedirs("figures\\perf_prof")
 
+# TODO: eventually this file should contain all parts of the pipeline
+# TODO: remove hardcoded variables from files (beginning with classification and regression model files)
+
 classification_models.do()
 regressor_models.do()

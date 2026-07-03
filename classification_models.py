@@ -329,12 +329,11 @@ def evaluate_models(model_name, best_model, enc, X_test, y_test, y):
 
 def get_predicted_labels(y_pred_test, enc):
     # reverse transform the predicted labels into strings
-    # TODO: do this in a loop based on y_pred_test size
-    y_pred_test_1 = enc[0].inverse_transform(y_pred_test[:,0])
-    y_pred_test_2 = enc[1].inverse_transform(y_pred_test[:,1])
-    y_pred_test_3 = enc[2].inverse_transform(y_pred_test[:,2])
+    y_pred_test_tf = []
+    for i in range(len(enc)):
+        y_pred_test_tf.append(enc[i].inverse_transform(y_pred_test[:,i]))
     
-    y_pred_test_df = pd.DataFrame(np.column_stack([y_pred_test_1, y_pred_test_2, y_pred_test_3]))
+    y_pred_test_df = pd.DataFrame(np.column_stack(y_pred_test_tf))
     
     print(y_pred_test_df)
 

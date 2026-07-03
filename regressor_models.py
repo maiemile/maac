@@ -170,6 +170,7 @@ def prepare_data(df, test_problems, scaler, enc, load_features=False):
 
     return [X_train, X_test, y_train, y_test], selected_columns
 
+
 def get_model_data():
     # models and their parameter grid for grid search with cross-validation
     regr_rf = RandomForestRegressor(random_state=0)
@@ -209,6 +210,7 @@ def get_model_data():
     }
     
     return model_dict
+
 
 def optimize_models(regr, X_train, y_train, param_grid):
     kfold = KFold(n_splits=10, shuffle=True, random_state=42)
