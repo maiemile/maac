@@ -16,6 +16,7 @@ re_problems = {"re31": reprob.RE31, "re32": reprob.RE32, "re33": reprob.RE33, "r
                "re41": reprob.RE41, "re42": reprob.RE42, "re61": reprob.RE61, "re91": reprob.RE91}
 pop_sizes = {3: 105, 4: 120, 6: 132, 9: 210} # from the RVEA article, partially interpolated
 
+
 def sample_problem(problem):
     prob_name = problem[0]
     n_var = problem[1]
@@ -123,9 +124,12 @@ def calculate_moo_features(X,y,nds_indices):
     return mo_ela_dict
 
 
-if __name__ == "__main__":
+def do(aggregators: list[str] = None):
     # all the problems instances
     problem_instances = util.get_problem_instances()
+
+    if aggregators == None:
+        util.get_default_aggregators()
 
     for prob in problem_instances:
         X, y = sample_problem(prob)
@@ -174,18 +178,21 @@ if __name__ == "__main__":
         #calculate features specific to multi-objective optimization
         moo_ela_dict = calculate_moo_features(X,y,nds_indices)
 
-        dicts = [max_dict,min_dict,avg_dict,sd_dict, nds_ela_dict, moo_ela_dict]
-        suffixes = ["max", "min", "avg", "sd", "nds", "moo"]
-
+        dict_names = {"max":max_dict, "min": min_dict, "avg": avg_dict, "sd": sd_dict, "nds": nds_ela_dict, "moo": moo_ela_dict}
+        dicts = [dict_names[agg] for agg in aggregators]
 
         prob_name_print = prob_name+'-'+str(n_obj)+'obj'
         for i in range(len(dicts)):
-            path = Path('ela_features\\' + prob_name_print + '_' + suffixes[i] + '.txt')
+            path = Path('ela_features\\' + prob_name_print + '_' + aggregators[i] + '.txt')
             with open(path, "w") as file:
                 for k, v in dicts[i].items():
                     if 'runtime' in k:
                         continue
                     file.write(k + " " + str(v) + "\n")
         print(prob_name_print, "done")
+
+
+if __name__ == "__main__":
+    do()    
 
             

@@ -369,13 +369,16 @@ def run_full_regression_model(df, igd_dict, test_problems, model, data, scaler, 
     return mse, igd_values
 
 
-def do(model_dict: dict = None, problems_to_ignore: list[str] = []) -> None:
+def do(model_dict: dict = None, feat_sets: list[str] = None, problems_to_ignore: list[str] = []) -> None:
     # fetch the names of problems used in the testing phase
     test_problems = util.get_test_problems()
 
     igd_labels_2 = ['problem', 'algorithm', 'crossover', 'mutation', 'igd', 'igd_plus', 'objectives', 'variables']
     enc = OneHotEncoder(handle_unknown='ignore')
     scaler = StandardScaler()
+
+    if feat_sets == None:
+        feat_sets = util.get_default_aggregators()
 
     # obtain the data, do necessary preprocessing
     _, igd_dict, igd_array_regr = util.create_igd_array_and_dict('indicator_data\\igd_values_log.txt')

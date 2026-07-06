@@ -106,6 +106,15 @@ def get_all_configurations() -> list[str]:
     return configs
 
 
+# TODO: check the folder indicator_data, and find all suffixes
+def get_default_aggregators() -> list[str]:
+    '''
+    Returns the default list of aggregators used for exploratory landscape analysis (ELA)
+    '''
+
+    return ["max", "min", "avg", "sd", "nds", "moo"]
+
+
 def get_labels_from_file(labels: list[str], feat_sets: list[str]) -> list[str]:
     '''
     Obtain all ELA feature names from a file.
@@ -134,6 +143,7 @@ def load_data(data_array, feat_sets, problem_instances):
         objectives = int(split_prob_name[1][0])
         variables = 0
         for i in range(len(problem_instances)):
+            # TODO: this needs to be changed to handle same problem instances with varying number of decision variables 
             if problem_instances[i][0] == name and problem_instances[i][2] == objectives:
                 variables = problem_instances[i][1]
 

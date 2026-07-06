@@ -14,7 +14,7 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.multioutput import MultiOutputClassifier
 from sklearn.model_selection import cross_val_score, KFold, train_test_split, GridSearchCV
-from sklearn.metrics import accuracy_score, f1_score, confusion_matrix, make_scorer, ConfusionMatrixDisplay
+from sklearn.metrics import f1_score, confusion_matrix, make_scorer, ConfusionMatrixDisplay
 from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import LabelEncoder, StandardScaler
 from sklearn.feature_selection import SelectKBest, f_classif
@@ -120,44 +120,16 @@ def multioutput_macro_f1(y_true, y_pred) -> float:
 
 
 def select_features(y, X_train, X_test, y_train):
-    selected_features = []
-    selected_feature_indexes = []
-    
-    # Select 20 most important features for each response variable separately
-    # and concatenate the chosen features
-    for i in range(len(y.columns)):
-        selector = SelectKBest(f_classif, k=20)
-        X_new = selector.fit_transform(X_train, y_train.iloc[:,i])
-    
-        # print a dataframe of the selected features, ordered by the score
-        names = X_train.columns.values[selector.get_support()]
-        scores = selector.scores_[selector.get_support()]
-        names_scores = list(zip(names, scores))
-        ns_df = pd.DataFrame(data = names_scores, columns=
-         ['Feat_names','F_Scores'])
-        ns_df_sorted = ns_df.sort_values(['F_Scores','Feat_names'], ascending =
-         [False, True])
-        print(ns_df_sorted)
-    
-        cols_idxs = list(selector.get_support(indices=True))
-        columns = list(selector.get_feature_names_out())
-        
-        selected_features = selected_features + columns
-        selected_feature_indexes = selected_feature_indexes + cols_idxs
-        print(cols_idxs)
-        print(columns)
-    
-    # remove duplicates
-    union_list = list(set(selected_features))
-    union_list_idx = list(set(selected_feature_indexes))
-    
-    print(union_list)
-    print(union_list_idx)
-    print(len(union_list))
-    print(len(union_list_idx))
+    '''
+    Does feature selection according to feature importance.
+    20 most important features are selected for each response variable
+    and the union of all features are used to obtain a subset of X_train
+    and X_test.
+    '''
 
     if load_models:
         # the following code is used when wanting to access the features used for a model
+        # TODO: remove hardcoded path
         with open(f'models\\Random forest_classifier_v2.pkl', 'rb') as f:
             clf2 = pickle.load(f)
         for clf in clf2.estimators_:
@@ -168,13 +140,51 @@ def select_features(y, X_train, X_test, y_train):
         X_test = X_test[features]
 
     else:
+        selected_features = []
+        selected_feature_indexes = []
+
+        # Select 20 most important features for each response variable separately
+        # and concatenate the chosen features
+        for i in range(len(y.columns)):
+            selector = SelectKBest(f_classif, k=20)
+            X_new = selector.fit_transform(X_train, y_train.iloc[:,i])
+
+            # print a dataframe of the selected features, ordered by the score
+            names = X_train.columns.values[selector.get_support()]
+            scores = selector.scores_[selector.get_support()]
+            names_scores = list(zip(names, scores))
+            ns_df = pd.DataFrame(data = names_scores, columns=
+             ['Feat_names','F_Scores'])
+            ns_df_sorted = ns_df.sort_values(['F_Scores','Feat_names'], ascending =
+             [False, True])
+            print(ns_df_sorted)
+
+            cols_idxs = list(selector.get_support(indices=True))
+            columns = list(selector.get_feature_names_out())
+
+            selected_features = selected_features + columns
+            selected_feature_indexes = selected_feature_indexes + cols_idxs
+            print(cols_idxs)
+            print(columns)
+
+        # remove duplicates
+        union_list = list(set(selected_features))
+        union_list_idx = list(set(selected_feature_indexes))
+
+        print(union_list)
+        print(union_list_idx)
+        print(len(union_list))
+        print(len(union_list_idx))
         X_train = X_train[union_list]
         X_test = X_test[union_list]
 
     return X_train, X_test
 
 
-def get_model_data():
+def get_model_data() -> dict:
+    '''
+    Returns a dictionary of the default machine learning models and their parameter grids for hyperparameter optimization
+    '''
     # hyperparameter optimization for the machine learning models => split into train/val + test sets
     # and evaluate the best model with the test set to get a more accurate representation of the accuracy
     clf_dt = MultiOutputClassifier(DecisionTreeClassifier(random_state=42))
@@ -328,6 +338,9 @@ def evaluate_models(model_name, best_model, enc, X_test, y_test, y):
 
 
 def get_predicted_labels(y_pred_test, enc):
+    '''
+    Performs inverse transform on the predictions to obtain true predicted labels.
+    '''
     # reverse transform the predicted labels into strings
     y_pred_test_tf = []
     for i in range(len(enc)):
@@ -395,14 +408,16 @@ def print_decision_trees() -> None:
             plt.show()
 
 
-def do(model_dict: dict = None, problems_to_ignore: list[str] = []) -> None:
+def do(model_dict: dict = None, feat_sets: list[str] = None, problems_to_ignore: list[str] = []) -> None:
 
     igd_array, igd_dict, _ = util.create_igd_array_and_dict('indicator_data\\igd_values_log.txt')
 
     Y = load_response_variables(problems_to_ignore)
 
     labels = ['problem', 'algo', 'crossover', 'mutation', 'objectives', 'variables']
-    feat_sets = ['min', 'max', 'avg', 'sd', 'nds', 'moo']
+
+    if feat_sets == None:
+        feat_sets = util.get_default_aggregators()
 
     labels = util.get_labels_from_file(labels, feat_sets)
     data = util.load_data(Y, feat_sets, problem_instances)
@@ -439,6 +454,7 @@ def do(model_dict: dict = None, problems_to_ignore: list[str] = []) -> None:
 
     util.create_performance_profile_plot(igd_dict, igd_value_sets, None, test_problems, 'classifiers', config_labels, font_size=6)   
 
+    # TODO: currently print_decision_trees isn't called
 
 if __name__ == "__main__":
     do()
