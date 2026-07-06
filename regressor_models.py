@@ -290,7 +290,7 @@ def run_full_regression_model(df, igd_dict, test_problems, model, data, scaler, 
                               problems_to_ignore: list[str], response_variable: str, load_file=False):
 
     test_set = df[df['problem'].str.contains('|'.join(test_problems), na=False)]
-    y_cols = response_variable
+    y_cols = [response_variable]
     cat_vars = ['algorithm', 'crossover', 'mutation']
 
     X_train, X_test, y_train, y_test = data
