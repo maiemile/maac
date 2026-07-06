@@ -8,13 +8,11 @@ from pflacco.classical_ela_features import (calculate_ela_meta, calculate_ela_di
                                             calculate_dispersion, calculate_information_content, calculate_ela_level)
 from pathlib import Path
 from desdeo.tools.non_dominated_sorting import fast_non_dominated_sort_indices
-from desdeo.tools.reference_vectors import create_simplex
 from scipy.spatial.distance import pdist
 import utils as util
 
 re_problems = {"re31": reprob.RE31, "re32": reprob.RE32, "re33": reprob.RE33, "re34": reprob.RE34, "re37": reprob.RE37,
                "re41": reprob.RE41, "re42": reprob.RE42, "re61": reprob.RE61, "re91": reprob.RE91}
-pop_sizes = {3: 105, 4: 120, 6: 132, 9: 210} # from the RVEA article, partially interpolated
 
 
 def sample_problem(problem):

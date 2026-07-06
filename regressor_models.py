@@ -7,6 +7,7 @@ import xgboost as xgb
 from pathlib import Path
 import pickle
 import matplotlib.pyplot as plt
+import os
 import scienceplots
 
 from sklearn.ensemble import RandomForestRegressor
@@ -51,7 +52,7 @@ def calculate_r2_scores(feat_sets, response_variable:str):
         print(item[0], item[1])
 
     # save the sorted results to text files
-    path = Path(f'model_analysis\\r2_scores_regressor2.txt')
+    path = Path(f'model_analysis\\r2_scores_regressor.txt')
     with open(path, "w") as file:
         for line in sorted_r2_scores:
             file.write(" ".join(str(item) for item in line) + "\n")
@@ -140,9 +141,22 @@ def prepare_data(df, test_problems, scaler, enc, response_variable: str, load_fe
     y_test = test_set[y_cols]
 
     # if we want to load pre-existing features for the model
-    # TODO: this should be improved to work if there is another model available/use model defined by user
     if load_features:
-        with open(f'models\\Random forest_regressor.pkl', 'rb') as f:
+        # Try to find a regressor model in the models folder
+        modelname = None
+        for x in os.listdir('models'):
+            # TODO: could allow other file types
+            if x.endswith(".pkl"):
+                # TODO: is _classifier sufficient as an identifier of classification models
+                if '_regressor' in x:
+                    modelname = x
+                    break
+        
+        # If no classifier models were found, raise an exception
+        if modelname == None:
+            raise Exception('No models found. Feature names could not be loaded.')
+        
+        with open(f'models\\{modelname}', 'rb') as f:
             best_estimator = pickle.load(f)
             feature_names = best_estimator.feature_names_in_
             # get the indexes of the existing features in the dataframe

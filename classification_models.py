@@ -1,6 +1,7 @@
 # code by @maiemile
 
 import pickle
+import os
 import numpy as np
 import pandas as pd
 import utils as util
@@ -128,9 +129,22 @@ def select_features(y, X_train, X_test, y_train):
     '''
 
     if load_models:
+        # Try to find a classifier model in the models folder
+        modelname = None
+        for x in os.listdir('models'):
+            # TODO: could allow other file types
+            if x.endswith(".pkl"):
+                # TODO: is _classifier sufficient as an identifier of classification models
+                if '_classifier' in x:
+                    modelname = x
+                    break
+        
+        # If no classifier models were found, raise an exception
+        if modelname == None:
+            raise Exception('No models found. Feature names could not be loaded.')
+        
         # the following code is used when wanting to access the features used for a model
-        # TODO: remove hardcoded path
-        with open(f'models\\Random forest_classifier_v2.pkl', 'rb') as f:
+        with open(f'models\{modelname}', 'rb') as f:
             clf2 = pickle.load(f)
         for clf in clf2.estimators_:
             features = clf.feature_names_in_

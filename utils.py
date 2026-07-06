@@ -124,6 +124,15 @@ def get_benchmark_configurations() -> list[str]:
     return ['ibea-SBX-NUM', 'nsga3-SBX-BPM']
 
 
+
+def get_default_pop_sizes() -> dict:
+    '''
+    Obtain a dictionary of the default population sizes based on the number of objective functions.
+    Calculated using a simplex-lattice formula.
+    '''
+    return {3: 105, 4: 120, 6: 132, 9: 210} # from the RVEA article, partially interpolated
+
+
 def get_labels_from_file(labels: list[str], feat_sets: list[str]) -> list[str]:
     '''
     Obtain all ELA feature names from a file.
