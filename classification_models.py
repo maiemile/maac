@@ -408,7 +408,7 @@ def print_decision_trees() -> None:
             plt.show()
 
 
-def do(model_dict: dict = None, feat_sets: list[str] = None, problems_to_ignore: list[str] = []) -> None:
+def do(model_dict: dict = None, feat_sets: list[str] = None, configs: list[str] = None, problems_to_ignore: list[str] = []) -> None:
 
     igd_array, igd_dict, _ = util.create_igd_array_and_dict('indicator_data\\igd_values_log.txt')
 
@@ -438,13 +438,15 @@ def do(model_dict: dict = None, feat_sets: list[str] = None, problems_to_ignore:
         model_dict = get_model_data()
     best_estimators = train_models(model_dict, scorer, X_train, y_train)
 
+    if configs == None:
+        configs = util.get_benchmark_configurations()
+
     igd_value_sets = []
     config_labels = []
     for model_name, best_model in best_estimators.items():
         y_pred_test = evaluate_models(model_name, best_model, enc, X_test, y_test, y)
         y_pred_test_df = get_predicted_labels(y_pred_test, enc)
         igd_values, testproblems = get_predicted_igd_values(y_pred_test_df, y_test, df_original, indexes, igd_dict)
-        configs = ['ibea-SBX-NUM', 'nsga3-SBX-BPM']
 
         # display a proper performance profile plot comparing the configurator against the above configurations
         util.create_performance_profile_plot(igd_dict, igd_values, configs, testproblems, model_name + '_classifier')
@@ -455,6 +457,7 @@ def do(model_dict: dict = None, feat_sets: list[str] = None, problems_to_ignore:
     util.create_performance_profile_plot(igd_dict, igd_value_sets, None, test_problems, 'classifiers', config_labels, font_size=6)   
 
     # TODO: currently print_decision_trees isn't called
+
 
 if __name__ == "__main__":
     do()

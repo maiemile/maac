@@ -18,6 +18,7 @@ def load_files_config() -> bool:
 
     return load_from_files
 
+
 def create_igd_array_and_dict(file_name):
     igd_dict = {}
     igd_array = []
@@ -113,6 +114,14 @@ def get_default_aggregators() -> list[str]:
     '''
 
     return ["max", "min", "avg", "sd", "nds", "moo"]
+
+
+def get_benchmark_configurations() -> list[str]:
+    '''
+    Returns the default list of benchmark configurations used for performance profile plots or other comparisons against the configurators.
+    '''
+
+    return ['ibea-SBX-NUM', 'nsga3-SBX-BPM']
 
 
 def get_labels_from_file(labels: list[str], feat_sets: list[str]) -> list[str]:

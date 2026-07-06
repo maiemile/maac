@@ -125,7 +125,11 @@ def calculate_moo_features(X,y,nds_indices):
 
 
 def do(aggregators: list[str] = None):
-    # all the problems instances
+    '''
+    :param aggregators: List of aggregation strategies to use. Available strategies: 'max', 'min', 'avg', 'sd', 'nds', 'moo' 
+    '''
+
+    # all problems instances
     problem_instances = util.get_problem_instances()
 
     if aggregators == None:

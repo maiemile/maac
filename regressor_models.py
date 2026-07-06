@@ -8,8 +8,6 @@ from pathlib import Path
 import pickle
 import matplotlib.pyplot as plt
 import scienceplots
-import os
-import configparser
 
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import (r2_score, mean_squared_error, mean_squared_log_error, mean_absolute_percentage_error
@@ -26,13 +24,12 @@ problem_instances = util.get_problem_instances()
 algos, crossovers, mutations = util.get_all_configuration_options()
 
 cols_to_drop = ['problem', 'igd_plus', 'ic.eps_ratio_MIN', 'ic.eps_ratio_AVG', 'ic.eps_ratio_SD']
-feat_sets = ['min', 'max', 'avg', 'sd', 'nds', 'moo']
 
 # Fetch the information on whether to load pre-existing models (True) or train new ones (False)
 load_models = util.load_files_config()
 
 
-def calculate_r2_scores():
+def calculate_r2_scores(feat_sets, response_variable:str):
     '''
     Calculates the R2 scores for regression models predicting the IGD value.
     Saves the results in a .txt file.
@@ -45,7 +42,7 @@ def calculate_r2_scores():
     dataframe = get_dataframe(igd_array, labels, feat_sets, problem_instances)
 
     #get the R2 scores of the models 
-    r2_scores = run_models(dataframe)
+    r2_scores = run_models(dataframe, response_variable)
 
     # Sort the configs based on the R2 scores in descending order
     sorted_r2_scores = sorted(r2_scores, key=lambda x: x[1], reverse=True)  
@@ -81,12 +78,12 @@ def select_features(X_temp, y):
     return cols_idxs
 
 
-def run_models(df):
+def run_models(df, response_variable:str):
     configs = [a+'-'+c+'-'+m for a in algos for c in crossovers for m in mutations]
 
     r2_score_by_config = []
 
-    y_cols_ = ['igd']
+    y_cols_ = [response_variable]
     y_cols = y_cols_ + ['problem', 'config', 'igd_plus', 'ic.eps_ratio_MIN', 'ic.eps_ratio_AVG', 'ic.eps_ratio_SD']
     df_config_temp = df.drop(columns=y_cols)
     scaler = StandardScaler().fit(df_config_temp)
@@ -118,14 +115,14 @@ def run_models(df):
     return r2_score_by_config
 
 
-def prepare_data(df, test_problems, scaler, enc, load_features=False):
+def prepare_data(df, test_problems, scaler, enc, response_variable: str, load_features: bool=False):
 
     # get the test set from the full data based on the names of the test problems
     test_set = df[df['problem'].str.contains('|'.join(test_problems), na=False)]
 
     df = df.drop(df[df['problem'].isin(test_problems)].index)
 
-    y_cols = ['igd']
+    y_cols = [response_variable]
     cat_vars = ['algorithm', 'crossover', 'mutation']
 
     # scale or encode train data depending on if the feature is numerical or categorical
@@ -289,11 +286,11 @@ def create_confusion_matrices(y_test, y_pred_test, model_name):
 
 
 
-def run_full_regression_model(df, igd_dict, test_problems, model, data, scaler, enc, selected_columns, param_grid, model_name, problems_to_ignore,
-                              load_file=False):
+def run_full_regression_model(df, igd_dict, test_problems, model, data, scaler, enc, selected_columns, param_grid, model_name: str, 
+                              problems_to_ignore: list[str], response_variable: str, load_file=False):
 
     test_set = df[df['problem'].str.contains('|'.join(test_problems), na=False)]
-    y_cols = ['igd']
+    y_cols = response_variable
     cat_vars = ['algorithm', 'crossover', 'mutation']
 
     X_train, X_test, y_train, y_test = data
@@ -369,7 +366,8 @@ def run_full_regression_model(df, igd_dict, test_problems, model, data, scaler, 
     return mse, igd_values
 
 
-def do(model_dict: dict = None, feat_sets: list[str] = None, problems_to_ignore: list[str] = []) -> None:
+def do(model_dict: dict = None, feat_sets: list[str] = None, configs: list[str] = None, response_variable: str = "igd", 
+       problems_to_ignore: list[str] = []) -> None:
     # fetch the names of problems used in the testing phase
     test_problems = util.get_test_problems()
 
@@ -384,13 +382,13 @@ def do(model_dict: dict = None, feat_sets: list[str] = None, problems_to_ignore:
     _, igd_dict, igd_array_regr = util.create_igd_array_and_dict('indicator_data\\igd_values_log.txt')
     labels_regr = util.get_labels_from_file(igd_labels_2, feat_sets)
     dataframe = get_dataframe(igd_array_regr, labels_regr, feat_sets, problem_instances)
-    data, selected_features = prepare_data(dataframe, test_problems, scaler, enc, load_features=load_models)
+    data, selected_features = prepare_data(dataframe, test_problems, scaler, enc, response_variable, load_features=load_models)
     
     if model_dict == None:
         model_dict = get_model_data()
 
-    configs = ['ibea-SBX-NUM', 'nsga3-SBX-BPM']
-    all_configs = util.get_all_configurations()
+    if configs == None:
+        configs = util.get_benchmark_configurations()
 
     igd_value_sets = []
     config_labels = []
@@ -404,7 +402,8 @@ def do(model_dict: dict = None, feat_sets: list[str] = None, problems_to_ignore:
         
         # run all of the regression models, either with hyperparameter optimization or using existing models
         mse, igd_values = run_full_regression_model(dataframe, igd_dict, test_problems, model, data, scaler, enc, 
-                                                    selected_features, param_grid, model_name, problems_to_ignore, load_file=load_models)
+                                                    selected_features, param_grid, model_name, problems_to_ignore,
+                                                     response_variable, load_file=load_models)
         util.create_performance_profile_plot(igd_dict, igd_values, configs, test_problems, model_name + '_regressor')
         igd_value_sets.append(igd_values)
         config_labels.append(model_name + ' regressor')
@@ -415,7 +414,7 @@ def do(model_dict: dict = None, feat_sets: list[str] = None, problems_to_ignore:
     for model, mse_value in mse_values.items():
         print(model, mse_value)
 
-    calculate_r2_scores()
+    calculate_r2_scores(feat_sets, response_variable)
 
 
 if __name__ == "__main__":
