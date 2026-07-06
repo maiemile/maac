@@ -135,12 +135,22 @@ def get_default_pop_sizes() -> dict:
 
 def get_labels_from_file(labels: list[str], feat_sets: list[str]) -> list[str]:
     '''
-    Obtain all ELA feature names from a file.
+    Obtain all ELA feature names from files corresponding to the feature set names.
     Returns a list of strings.
     '''
+    import os
     for f_set in feat_sets:
-        # TODO: use any file instead of hardcoded one
-        with open(f'ela_features\\dtlz1-3obj_{f_set}.txt', 'r') as file:
+        filename = None
+        for x in os.listdir('ela_features'):
+            # TODO: could allow other file types
+            if x.endswith(".txt") and f_set in x:
+                filename = x
+        
+        # If no classifier models were found, raise an exception
+        if filename == None:
+            raise Exception(f'No ELA files found for aggregator {f_set}. Feature names could not be loaded.')
+        
+        with open(f'ela_features\\{filename}', 'r') as file:
             for line in file:
                 split_line = line.split() 
 

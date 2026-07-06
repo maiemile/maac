@@ -440,7 +440,6 @@ def do(model_dict: dict = None, feat_sets: list[str] = None, configs: list[str] 
     df_original = pd.DataFrame(data, columns=labels)
 
     X_train, X_test, y_train, y_test, y, enc = preprocess_data(df_original)
-    #print(X_train.shape, X_test.shape, y_train.shape, y_test.shape)
     indexes = list(y_test.index)
 
     # Select most relevant features and update the input variable dataset to reflect the selections
