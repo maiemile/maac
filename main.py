@@ -1,9 +1,14 @@
 # Code by @maiemile
 
+# This is the main file
+
+
 import os
 import classification_models
 import regressor_models
 import sampling
+import igd_analysis
+import best_igd
 
 # TODO: need a better implementation for this
 pipeline = ["classification", "regression"]
@@ -18,6 +23,11 @@ if not os.path.exists("figures\\perf_prof"):
 # TODO: eventually this file should contain all parts of the pipeline
 # TODO: remove hardcoded variables from files (beginning with classification and regression model files)
 
+if "best_indicator" in pipeline:
+    best_igd.do()
+
+if "igd_analysis" in pipeline:
+    igd_analysis.do()
 
 if "sampling" in pipeline:
     sampling.do()

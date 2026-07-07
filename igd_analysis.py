@@ -138,9 +138,12 @@ def calculate_scores(data:dict, lists:bool=False) -> tuple[dict, dict, dict]:
         igd_plus_90th_qs[k] = np.quantile(v,0.9)
 
     return [igd_plus_avg_scores, igd_plus_median_scores, igd_plus_90th_qs]
-    
 
-if __name__ == "__main__":
+
+def do():
+    '''
+    Main function for running and saving all IGD analysis calculations.
+    '''
 
     res_dict_names = [["Average regular IGD ranks", "Median regular IGD ranks", "90th percentile regular IGD rank", 
                       "Average regular IGD values", "Median regular IGD values", "90th percentile regular IGD value"],
@@ -172,4 +175,9 @@ if __name__ == "__main__":
             for j in range(len(res_dict_names[k])):
                 res_dict_names_by_.append(res_dict_names[k][j] + additional_texts[i])
 
-            util.save_and_print_results(res_dict_by_, res_dict_names_by_, 'igd_analysis_test\\')
+            util.save_and_print_results(res_dict_by_, res_dict_names_by_, 'igd_analysis_test\\')    
+
+
+if __name__ == "__main__":
+    do()
+    
