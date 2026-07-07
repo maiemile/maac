@@ -9,7 +9,13 @@ import utils as util
 # the value of which is a dictionary of
 # configuration: igd/igd+ values
 
-def load_data(file_name, index_of_data):
+
+def load_data(file_name:str, index_of_data:int) -> tuple[dict, list[dict]]:
+    '''
+    Loads dictionaries of indicator data.
+    One dictionary with a key for each configuration.
+    Individual dictionaries for the algorithm, crossover and mutation as keys.
+    '''
     igd_data = {}
     igd_data_by_algo = {}
     igd_data_by_crossover = {}
@@ -54,10 +60,11 @@ def load_data(file_name, index_of_data):
 
     return igd_data, igd_data_dicts
 
-def create_score_lists(data, lists=False):
-    # igd_plus_scores:
-    # key = configuration,
-    # value = list of igd+ values of that configuration
+
+def create_score_lists(data:dict, lists:bool=False) -> dict:
+    '''
+    Creates a dictionary where each value is the list of indicator values for the given config parameters.
+    '''
     igd_plus_scores = {}
     for k,v in data.items():
         for k2,v2 in v.items():
@@ -74,8 +81,12 @@ def create_score_lists(data, lists=False):
 
     return igd_plus_scores
 
-def create_rank_lists(data):
-    # rank the configurations in each problem based on IGD+ value
+
+def create_rank_lists(data:dict) -> dict:
+    '''
+    rank the configurations in each problem based on indicator value
+    '''
+    
     igd_plus_ranks = {}
     for k,v in data.items():
         sorted_x = sorted(v.items(), key=lambda kv: kv[1])
@@ -89,7 +100,11 @@ def create_rank_lists(data):
 
     return igd_plus_ranks
 
-def calculate_ranks(data):
+
+def calculate_ranks(data:dict) -> tuple[dict, dict, dict]:
+    '''
+    Calculates average, median and 90th percentile IGD ranks for each key/value pair the given dictionary.
+    '''
 
     igd_plus_ranks = create_rank_lists(data)
 
@@ -104,8 +119,12 @@ def calculate_ranks(data):
 
     return [igd_plus_avg_ranks, igd_plus_median_ranks, igd_plus_90th_qr]
 
+
 # lists=True when the values of the dictionaries inside the dictionary contain values that are lists 
-def calculate_scores(data, lists=False):
+def calculate_scores(data:dict, lists:bool=False) -> tuple[dict, dict, dict]:
+    '''
+    Calculates average, median and 90th percentile IGD values for each key/value pair the given dictionary.
+    '''
     
     igd_plus_scores = create_score_lists(data, lists=lists)
 
@@ -123,34 +142,34 @@ def calculate_scores(data, lists=False):
 
 if __name__ == "__main__":
 
-    # IMPORTANT! 
-    # In the following line, Use 1 for IGD and 2 for IGD+
-    igd_data, igd_data_by_dict = load_data("indicator_data\\igd_values_log.txt", 1)
-
-    #res_dict_names = ["Average IGD+ ranks", "Median IGD+ ranks", "90th percentile IGD+ rank", 
-    #                  "Average IGD+ values", "Median IGD+ values", "90th percentile IGD+ value"]
-
-    res_dict_names = ["Average regular IGD ranks", "Median regular IGD ranks", "90th percentile regular IGD rank", 
-                      "Average regular IGD values", "Median regular IGD values", "90th percentile regular IGD value"]
-    
-    rank_data = calculate_ranks(igd_data)
-    score_data = calculate_scores(igd_data)
-    
-    res_dict = rank_data + score_data
-    
-    util.save_and_print_results(res_dict, res_dict_names, 'igd_analysis\\')
+    res_dict_names = [["Average regular IGD ranks", "Median regular IGD ranks", "90th percentile regular IGD rank", 
+                      "Average regular IGD values", "Median regular IGD values", "90th percentile regular IGD value"],
+                      ["Average IGD+ ranks", "Median IGD+ ranks", "90th percentile IGD+ rank", 
+                      "Average IGD+ values", "Median IGD+ values", "90th percentile IGD+ value"]]
     
     additional_texts = [" by algorithm", " by crossover", " by mutation"]
-    for i in range(len(igd_data_by_dict)):
-        igd_data_by_ = igd_data_by_dict[i]
-    
-        rank_data_by_ = calculate_ranks(igd_data_by_)
-        score_data_by_ = calculate_scores(igd_data_by_, lists=True)
-    
-        res_dict_by_ = rank_data_by_ + score_data_by_
-    
-        res_dict_names_by_ = []
-        for j in range(len(res_dict_names)):
-            res_dict_names_by_.append(res_dict_names[j] + additional_texts[i])
-    
-        util.save_and_print_results(res_dict_by_, res_dict_names_by_, 'igd_analysis\\')
+
+    for k in range(2):
+        # In the following line, index 1 is for IGD and 2 is for IGD+
+        igd_data, igd_data_by_dict = load_data("indicator_data\\igd_values_log.txt", k+1)
+
+        rank_data = calculate_ranks(igd_data)
+        score_data = calculate_scores(igd_data)
+
+        res_dict = rank_data + score_data
+
+        util.save_and_print_results(res_dict, res_dict_names[k], 'igd_analysis_test\\')
+
+        for i in range(len(igd_data_by_dict)):
+            igd_data_by_ = igd_data_by_dict[i]
+
+            rank_data_by_ = calculate_ranks(igd_data_by_)
+            score_data_by_ = calculate_scores(igd_data_by_, lists=True)
+
+            res_dict_by_ = rank_data_by_ + score_data_by_
+
+            res_dict_names_by_ = []
+            for j in range(len(res_dict_names[k])):
+                res_dict_names_by_.append(res_dict_names[k][j] + additional_texts[i])
+
+            util.save_and_print_results(res_dict_by_, res_dict_names_by_, 'igd_analysis_test\\')
