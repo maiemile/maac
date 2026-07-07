@@ -279,6 +279,7 @@ def create_performance_profile_plot(igd_dict: dict, igd_values: list[float], con
     :param font_size: Controls the font size of the legend
     """
 
+    # get the data in a form the performance profile code can handle
     data_array = get_dataframe_for_performance_profile(igd_dict, configs, test_problems, igd_values, config_labels).to_numpy()
 
     palette = ['o-C0', 'o:C1', 'o--C2', 'o-.C3', 'o-C4', 'o:C5', 'o-C6', 'o--C0', 'o:C0', 'o-C1', 'o--C1', 'o:C2', 'o-C2',
@@ -287,11 +288,14 @@ def create_performance_profile_plot(igd_dict: dict, igd_values: list[float], con
                'v:C3', 'v--C3', 'v-C3', 'v-.C4', 'v--C4', 'v:C4', 'v-.C5', 'v-C5', 'v--C5', 'v-.C6', 'v--C6', 'v:C6',
                'v-.C7', 'v-C7', 'v--C7', 'v:C7', 'v-.C8', 'v-C8', 'v--C8', 'v:C8', 'v-.C9', 'v-C9', 'v--C9', 'v:C9']
 
+    # create the performance profile plots
     perfprof.perfprof(data_array, linestyle=palette, thmax=5., markersize=4, markevery=[0])
 
+    # convert the benchmark configuration names to upper case
     if configs != None:
         configs_uc = []
         for config in configs:
+            # nsga3 was used in other code TODO: fix earlier in the code
             configs_uc.append(config.upper().replace("NSGA3", "NSGA-III"))
         configs_labels = config_labels + configs_uc
     else:
