@@ -1,14 +1,18 @@
 # Code by @maiemile
 
 import matplotlib.pyplot as plt
+import configparser
+from pathlib import Path
+import os
+import pandas as pd
+import numpy as np
+import perfprof
 
 
 def load_files_config() -> bool:
     '''
     Reads the config.txt file and returns the value of the "load_models" variable.
     '''
-    import configparser
-    from pathlib import Path
 
     # use the config file to determine whether to load configurator models from files or training new ones
     config_parser = configparser.RawConfigParser()   
@@ -19,7 +23,11 @@ def load_files_config() -> bool:
     return load_from_files
 
 
-def create_igd_array_and_dict(file_name):
+def create_igd_array_and_dict(file_name:str):
+    '''
+    Creates a dictionary and arrays for classification and regression separately.
+    The data contains the problem, the IGD/IGD+ values and configuration in various formats.
+    '''
     igd_dict = {}
     igd_array = []
     igd_array_regr = []
@@ -138,7 +146,7 @@ def get_labels_from_file(labels: list[str], feat_sets: list[str]) -> list[str]:
     Obtain all ELA feature names from files corresponding to the feature set names.
     Returns a list of strings.
     '''
-    import os
+    
     for f_set in feat_sets:
         filename = None
         for x in os.listdir('ela_features'):
@@ -162,7 +170,11 @@ def get_labels_from_file(labels: list[str], feat_sets: list[str]) -> list[str]:
     return labels
 
 
-def load_data(data_array, feat_sets, problem_instances):
+def load_data(data_array, feat_sets:list[str], problem_instances):
+    '''
+    Creates a list of data consisting of the problem name, number of objective function and decision variables,
+    as well as the ELA features of the problem.
+    '''
     data = []
     for res in data_array:
         prob = res[0]
@@ -192,8 +204,10 @@ def load_data(data_array, feat_sets, problem_instances):
     return data
 
 
-def save_and_print_results(result_dicts, result_dict_names, result_folder=None):
-    from pathlib import Path
+def save_and_print_results(result_dicts: list[dict], result_dict_names:list[str], result_folder:str=None) -> None:
+    '''
+    Saves results from dictionaries in files corresponding to their names.
+    '''
 
     for i in range(len(result_dicts)):
         res_dict = result_dicts[i]
@@ -214,9 +228,11 @@ def save_and_print_results(result_dicts, result_dict_names, result_folder=None):
                     file.write(" ".join(str(item) for item in line) + "\n")
 
 
-def get_dataframe_for_performance_profile(igd_dict, configs, problems, igd_values=None, config_labels=['configurator']):
-    import pandas as pd
-    import numpy as np
+def get_dataframe_for_performance_profile(igd_dict:dict, configs:list[str], problems, igd_values=None, 
+                                          config_labels:list[str]=['configurator']) -> pd.DataFrame:
+    '''
+    Returns a dataframe in a format that can be handled by the performance profile plots
+    '''
 
     if igd_values != None:
         try:
@@ -227,7 +243,6 @@ def get_dataframe_for_performance_profile(igd_dict, configs, problems, igd_value
     else:
         full_igd_values = []
 
-    #print(full_igd_values)
     if configs != None:
         for config in configs:
             igd_values_c = []
@@ -236,7 +251,6 @@ def get_dataframe_for_performance_profile(igd_dict, configs, problems, igd_value
                 igd_values_c.append(igd_dict[problem_plus_config][0])
             full_igd_values.append(igd_values_c)
 
-        #print(full_igd_values)
         labels = config_labels + configs
     else:
         labels = config_labels
@@ -247,7 +261,7 @@ def get_dataframe_for_performance_profile(igd_dict, configs, problems, igd_value
 
 
 def create_performance_profile_plot(igd_dict: dict, igd_values: list[float], configs: list[str], test_problems: list[str], fig_name:str="img",
-                                    config_labels = ['configurator'], font_size = 10) -> None:
+                                    config_labels:list[str] = ['configurator'], font_size:int = 10) -> None:
     """
     Creates a performance profile plot with the given data.
     
@@ -259,8 +273,6 @@ def create_performance_profile_plot(igd_dict: dict, igd_values: list[float], con
     :param config_labels: Additional labels of configuration in addition to "configs"
     :param font_size: Controls the font size of the legend
     """
-
-    import perfprof
 
     data_array = get_dataframe_for_performance_profile(igd_dict, configs, test_problems, igd_values, config_labels).to_numpy()
 
