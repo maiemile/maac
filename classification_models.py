@@ -29,7 +29,10 @@ test_problems = util.get_test_problems()
 load_models = util.load_files_config()
 
 
-def load_response_variables(problems_to_ignore):
+def load_response_variables(problems_to_ignore: list[str]):
+    '''
+    Loads IGD data as a list. Each row contains a problem and the best configuration for that problem.
+    '''
     Y = []
 
     # load the response variables (the optimal configuration for each problem)
@@ -47,7 +50,13 @@ def load_response_variables(problems_to_ignore):
     return Y
 
 
-def preprocess_data(df_original):
+def preprocess_data(df_original: pd.DataFrame):
+    '''
+    The given dataframe is preprocessed. Data is cleaned from empty and infinite values
+    and variables are encoded or scaled depending on the type of the variables.
+    Train/test split is performed.
+    '''
+
     # Split the data into X and y (input and response variables)
     y_cols_original = ['algo', 'crossover', 'mutation']
     y = df_original[y_cols_original]
@@ -197,7 +206,7 @@ def select_features(y, X_train, X_test, y_train):
 
 def get_model_data() -> dict:
     '''
-    Returns a dictionary of the default machine learning models and their parameter grids for hyperparameter optimization
+    Returns a dictionary of the default machine learning models and their parameter grids for hyperparameter optimization.
     '''
     # hyperparameter optimization for the machine learning models => split into train/val + test sets
     # and evaluate the best model with the test set to get a more accurate representation of the accuracy
@@ -247,6 +256,10 @@ def get_model_data() -> dict:
 
 
 def train_models(model_dict, scorer, X_train, y_train):
+    '''
+    Classification models are trained or loaded depending on the value of load_models.
+    The training procedure includes cross-validation for hyperparameter optimization.
+    '''
 
     best_estimators = {}
     best_params = {}
@@ -288,7 +301,12 @@ def train_models(model_dict, scorer, X_train, y_train):
     return best_estimators
 
 
-def evaluate_models(model_name, best_model, enc, X_test, y_test, y):
+def evaluate_models(model_name:str, best_model, enc, X_test, y_test, y):
+    '''
+    The model prediction on the test data are evaluated. Confusion matrices of the 
+    predictions compared to true values are created and saved.
+    '''
+
     print("="*10 + model_name + "="*10)
     
     # Use the best model based on grid search to predict the test set response variables
@@ -367,7 +385,10 @@ def get_predicted_labels(y_pred_test, enc):
     return y_pred_test_df
 
 
-def get_predicted_igd_values(y_pred_test_df, y_test, df_original, indexes, igd_dict):
+def get_predicted_igd_values(y_pred_test_df: pd.DataFrame, y_test, df_original: pd.DataFrame, indexes, igd_dict:dict):
+    '''
+    Based on the predictions, obtain the IGD values of the chosen configurations.
+    '''
     problems = []
     problems_and_configs = []
     igd_values = []
@@ -387,6 +408,9 @@ def get_predicted_igd_values(y_pred_test_df, y_test, df_original, indexes, igd_d
 
 
 def print_decision_trees() -> None:
+    '''
+    Loads the decision tree models and prints a visualization of them.
+    '''
     from sklearn import tree
     from matplotlib.colors import ListedColormap, to_rgb
     model = "Decision tree"
@@ -423,6 +447,9 @@ def print_decision_trees() -> None:
 
 
 def do(model_dict: dict = None, feat_sets: list[str] = None, configs: list[str] = None, problems_to_ignore: list[str] = []) -> None:
+    '''
+    The default function for running the full pipeline of classification-based configurator models.
+    '''
 
     igd_array, igd_dict, _ = util.create_igd_array_and_dict('indicator_data\\igd_values_log.txt')
 

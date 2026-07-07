@@ -16,6 +16,12 @@ re_problems = {"re31": reprob.RE31, "re32": reprob.RE32, "re33": reprob.RE33, "r
 
 
 def sample_problem(problem):
+    '''
+    Creates a sample of the given multi-objective optimization problem.
+    Uses latin hypercube sampling to sample in the decision space
+    and the decision vectors are evaluated to get the objective vectors.
+    Works for RE, WFG and DTLZ problem suites.
+    '''
     prob_name = problem[0]
     n_var = problem[1]
     n_obj = problem[2]
@@ -54,7 +60,11 @@ def sample_problem(problem):
         evaluated = out["F"]
     return fixed_sample, evaluated
 
-def calculate_ela_features(X,y):
+
+def calculate_ela_features(X,y) -> dict:
+    '''
+    Calculates 7 clasical single-objective exploratory landscape analysis feature sets from pflacco.
+    '''
     # calculate 7 feature sets and combine the results to a dictionary
     ela_meta = calculate_ela_meta(X,y)
     ela_dict = ela_meta
@@ -73,7 +83,17 @@ def calculate_ela_features(X,y):
 
     return ela_dict
 
-def calculate_moo_features(X,y,nds_indices):
+
+def calculate_moo_features(X,y,nds_indices) -> dict:
+    '''
+    Calculates some multi-objective specific exploratory landscape analysis features proposed by the following paper:
+
+    Arnaud Liefooghe, Sébastien Verel, Benjamin Lacroix, Alexandru-Ciprian Zăvoianu, and John McCall. 2021. 
+    Landscape features and automated algorithm selection for multi-objective interpolated continuous optimisation problems. 
+    In Proceedings of the Genetic and Evolutionary Computation Conference (GECCO '21). Association for Computing Machinery, 
+    New York, NY, USA, 421–429. https://doi.org/10.1145/3449639.3459353
+
+    '''
 
     samples_per_front = []
     sum_of_ranks = 0
@@ -124,7 +144,10 @@ def calculate_moo_features(X,y,nds_indices):
 
 def do(aggregators: list[str] = None):
     '''
-    :param aggregators: List of aggregation strategies to use. Available strategies: 'max', 'min', 'avg', 'sd', 'nds', 'moo' 
+    The default function for running the sampling procedures.
+
+    :param aggregators: List of aggregation strategies to use. Available strategies/high-level feature sets: 
+        'max', 'min', 'avg', 'sd', 'nds', 'moo' 
     '''
 
     # all problems instances

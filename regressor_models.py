@@ -30,7 +30,7 @@ cols_to_drop = ['problem', 'igd_plus', 'ic.eps_ratio_MIN', 'ic.eps_ratio_AVG', '
 load_models = util.load_files_config()
 
 
-def calculate_r2_scores(feat_sets, response_variable:str):
+def calculate_r2_scores(feat_sets:list[str], response_variable:str):
     '''
     Calculates the R2 scores for regression models predicting the IGD value.
     Saves the results in a .txt file.
@@ -59,19 +59,27 @@ def calculate_r2_scores(feat_sets, response_variable:str):
 
 
 def create_igd_array(file_name):
+    '''
+    Helper method for getting the IGD data as an array only
+    '''
     igd_array, _, _ = util.create_igd_array_and_dict(file_name)
     return igd_array
 
 
-def get_dataframe(igd_array, igd_labels, feat_sets, problem_instances):
+def get_dataframe(igd_array, igd_labels, feat_sets, problem_instances) -> pd.DataFrame:
+    '''
+    Converts the default data to a dataframe using appropriate labels given as a parameter.
+    '''
     igd_data = util.load_data(igd_array, feat_sets, problem_instances)
     df = pd.DataFrame(igd_data, columns=igd_labels)
     return df
 
 
 def select_features(X_temp, y):
-    # Select 100 most important features for each response variable separately
-    # and concatenate the chosen features
+    '''
+    Select 100 most important features and return the indexes of these features.
+    '''
+
     selector = SelectKBest(f_regression, k=100)
     _ = selector.fit_transform(X_temp, y)
     cols_idxs = list(selector.get_support(indices=True))
@@ -79,7 +87,10 @@ def select_features(X_temp, y):
     return cols_idxs
 
 
-def run_models(df, response_variable:str):
+def run_models(df: pd.DataFrame, response_variable:str):
+    '''
+    Runs random forest regressor models to obtain the R2 scores on the train data.
+    '''
     configs = [a+'-'+c+'-'+m for a in algos for c in crossovers for m in mutations]
 
     r2_score_by_config = []
@@ -116,7 +127,11 @@ def run_models(df, response_variable:str):
     return r2_score_by_config
 
 
-def prepare_data(df, test_problems, scaler, enc, response_variable: str, load_features: bool=False):
+def prepare_data(df: pd.DataFrame, test_problems: list[str], scaler, enc, response_variable: str, load_features: bool=False):
+    '''
+    Does data preprocessing. Categorical variables are encoded, numerical variables are scaled and train/test split is performed.
+    Features are selected based on importance or loaded from existing models.
+    '''
 
     # get the test set from the full data based on the names of the test problems
     test_set = df[df['problem'].str.contains('|'.join(test_problems), na=False)]
@@ -182,7 +197,10 @@ def prepare_data(df, test_problems, scaler, enc, response_variable: str, load_fe
     return [X_train, X_test, y_train, y_test], selected_columns
 
 
-def get_model_data():
+def get_model_data() -> dict:
+    '''
+    Returns the default machine leraning models and their parameter options for hyperparameter optimization.
+    '''
     # models and their parameter grid for grid search with cross-validation
     regr_rf = RandomForestRegressor(random_state=0)
     regr_dt = DecisionTreeRegressor(random_state=0) 
@@ -223,7 +241,11 @@ def get_model_data():
     return model_dict
 
 
-def optimize_models(regr, X_train, y_train, param_grid):
+def optimize_models(regr, X_train, y_train, param_grid:dict):
+    '''
+    Performs hyperparameter optimization for the given regression model and its parameter grid
+    '''
+
     kfold = KFold(n_splits=10, shuffle=True, random_state=42)
 
     grid_search = GridSearchCV(
@@ -243,7 +265,10 @@ def optimize_models(regr, X_train, y_train, param_grid):
     return best_estimator
 
 
-def get_optimal_configs(problems_to_ignore):
+def get_optimal_configs(problems_to_ignore: list[str]) -> dict:
+    '''
+    Returns a dictionary with the optimal configuration for each problem.
+    '''
     Y = {}
 
     # load the response variables (the optimal configuration for each problem)
@@ -261,7 +286,11 @@ def get_optimal_configs(problems_to_ignore):
     return Y
 
 
-def create_confusion_matrices(y_test, y_pred_test, model_name):
+def create_confusion_matrices(y_test, y_pred_test, model_name:str) -> None:
+    '''
+    Creates a separate confusion matrix for each output. 
+    The confusion matrices are saved in a folder.
+    '''
     # Confusion matrix for each output
     fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(12,4))
     axes = [ax1, ax2, ax3]
@@ -300,11 +329,14 @@ def create_confusion_matrices(y_test, y_pred_test, model_name):
 
 
 
-def run_full_regression_model(df, igd_dict, test_problems, model, data, scaler, enc, selected_columns, param_grid, model_name: str, 
-                              problems_to_ignore: list[str], response_variable: str, load_file=False):
+def run_full_regression_model(df: pd.DataFrame, igd_dict: dict, test_problems: list[str], model, data, scaler, enc, selected_columns, 
+                              param_grid:dict, model_name: str, problems_to_ignore: list[str], response_variable: str, 
+                              load_file=False) -> tuple[float, list[float]]:
 
     test_set = df[df['problem'].str.contains('|'.join(test_problems), na=False)]
     y_cols = [response_variable]
+    
+    # TODO: automatically determine categorical variables
     cat_vars = ['algorithm', 'crossover', 'mutation']
 
     X_train, X_test, y_train, y_test = data
@@ -351,7 +383,6 @@ def run_full_regression_model(df, igd_dict, test_problems, model, data, scaler, 
         X1t = scaler.transform(df_to_normalizet)
         X1t_new = X1t[:,selected_columns]
         Xt = np.hstack((X1t_new, X2t))
-        yt = problem_data[y_cols]
 
         # use the model to make predictions
         y_predt = best_estimator.predict(Xt)
@@ -382,6 +413,10 @@ def run_full_regression_model(df, igd_dict, test_problems, model, data, scaler, 
 
 def do(model_dict: dict = None, feat_sets: list[str] = None, configs: list[str] = None, response_variable: str = "igd", 
        problems_to_ignore: list[str] = []) -> None:
+    '''
+    Default function for running the full pipeline of running the regression-based configurator models.
+    '''
+    
     # fetch the names of problems used in the testing phase
     test_problems = util.get_test_problems()
 
