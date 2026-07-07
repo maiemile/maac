@@ -23,6 +23,15 @@ if not os.path.exists("figures\\perf_prof"):
 # TODO: eventually this file should contain all parts of the pipeline
 # TODO: remove hardcoded variables from files (beginning with classification and regression model files)
 
+#if "run_experiments" in pipeline:
+#   puhti_python_script.do()
+
+#if "approx_pf" in pipeline:
+#   pf_approx_from_archives.do()
+
+#if "calculate_indicators" in pipeline:
+#   calc_indicator_values.do()
+
 if "best_indicator" in pipeline:
     best_igd.do()
 

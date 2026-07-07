@@ -55,6 +55,7 @@ f_evaluations = 10000
 logging.basicConfig(filename='indicator_values_final_pop_v3.log', level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
 def get_experiments():
 
     # all the problems instances
@@ -71,6 +72,7 @@ def get_experiments():
     random.shuffle(prob_and_config_permutations)
     
     return prob_and_config_permutations
+
 
 def simulator_problem(problem_name: str, n_vars: int, n_objs: int, server=False) -> Problem:
     # define all the variables separately in DESDEO

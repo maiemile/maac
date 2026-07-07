@@ -20,6 +20,8 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import LabelEncoder, StandardScaler
 from sklearn.feature_selection import SelectKBest, f_classif
 from sklearn.neural_network import MLPClassifier
+from sklearn import tree
+from matplotlib.colors import ListedColormap, to_rgb
 
 # all the problems instances
 problem_instances = util.get_problem_instances()
@@ -29,9 +31,9 @@ test_problems = util.get_test_problems()
 load_models = util.load_files_config()
 
 
-def load_response_variables(problems_to_ignore: list[str]):
+def load_response_variables(problems_to_ignore: list[str]) -> list[list[str]]:
     '''
-    Loads IGD data as a list. Each row contains a problem and the best configuration for that problem.
+    Loads best configuration data as a list. Each row contains a problem and the best configuration for that problem.
     '''
     Y = []
 
@@ -50,7 +52,7 @@ def load_response_variables(problems_to_ignore: list[str]):
     return Y
 
 
-def preprocess_data(df_original: pd.DataFrame):
+def preprocess_data(df_original: pd.DataFrame) -> tuple[pd.DataFrame,pd.DataFrame,pd.DataFrame,pd.DataFrame,pd.DataFrame, list[LabelEncoder]]:
     '''
     The given dataframe is preprocessed. Data is cleaned from empty and infinite values
     and variables are encoded or scaled depending on the type of the variables.
@@ -79,6 +81,7 @@ def preprocess_data(df_original: pd.DataFrame):
 
     y = pd.DataFrame(np.column_stack(cols))
 
+    # TODO: automatically remove columns with null/infinite values
     # print all columns with null values
     nan_cols = [i for i in df.columns if df[i].isnull().any()]
     for value in nan_cols:
@@ -87,7 +90,7 @@ def preprocess_data(df_original: pd.DataFrame):
     # dataset contains no nan values
     print(df.isnull().values.any())
 
-    # infinite values have been removed
+    # (negative) infinite values have been removed
     infs = (df == -np.inf).any(axis=0)
     for i in range(len(infs)):
         if infs[i] == True:
@@ -198,6 +201,8 @@ def select_features(y, X_train, X_test, y_train):
         print(union_list_idx)
         print(len(union_list))
         print(len(union_list_idx))
+
+        # update the input variable data to only contain selected features
         X_train = X_train[union_list]
         X_test = X_test[union_list]
 
@@ -208,6 +213,7 @@ def get_model_data() -> dict:
     '''
     Returns a dictionary of the default machine learning models and their parameter grids for hyperparameter optimization.
     '''
+
     # hyperparameter optimization for the machine learning models => split into train/val + test sets
     # and evaluate the best model with the test set to get a more accurate representation of the accuracy
     clf_dt = MultiOutputClassifier(DecisionTreeClassifier(random_state=42))
@@ -215,6 +221,7 @@ def get_model_data() -> dict:
     clf_lr = MultiOutputClassifier(LogisticRegression(random_state=42))
     clf_xg = MultiOutputClassifier(xgb.XGBClassifier(random_state=42))
     clf_nn = MultiOutputClassifier(MLPClassifier(random_state=42, max_iter=500))
+
     param_grid_rf = {
         "estimator__n_estimators": [10,50,100,200],
         "estimator__criterion": ["gini", "entropy", "log_loss"],
@@ -255,12 +262,13 @@ def get_model_data() -> dict:
     return model_dict
 
 
-def train_models(model_dict, scorer, X_train, y_train):
+def train_models(model_dict:dict, scorer, X_train, y_train):
     '''
     Classification models are trained or loaded depending on the value of load_models.
     The training procedure includes cross-validation for hyperparameter optimization.
     '''
 
+    # loop through every model and either load or train them 
     best_estimators = {}
     best_params = {}
     for model, model_data in model_dict.items():
@@ -279,6 +287,8 @@ def train_models(model_dict, scorer, X_train, y_train):
             # Use cross-validation as the dataset is small
             kfold = KFold(n_splits=5, shuffle=True, random_state=42)
 
+            # grid search is fine with a small parameter grid
+            # TODO: allow other types of cross-validation?
             grid_search = GridSearchCV(
                 estimator=classifier,
                 param_grid=param_grid,
@@ -385,7 +395,7 @@ def get_predicted_labels(y_pred_test, enc):
     return y_pred_test_df
 
 
-def get_predicted_igd_values(y_pred_test_df: pd.DataFrame, y_test, df_original: pd.DataFrame, indexes, igd_dict:dict):
+def get_predicted_igd_values(y_pred_test_df: pd.DataFrame, y_test, df_original: pd.DataFrame, indexes: list[int], igd_dict:dict):
     '''
     Based on the predictions, obtain the IGD values of the chosen configurations.
     '''
@@ -411,9 +421,10 @@ def print_decision_trees() -> None:
     '''
     Loads the decision tree models and prints a visualization of them.
     '''
-    from sklearn import tree
-    from matplotlib.colors import ListedColormap, to_rgb
+
+    # only decision trees can be printed as decision trees
     model = "Decision tree"
+    # TODO: this shouldn't be hardcoded
     classes_full = [
         ["IBEA", "NSGA-III", "RVEA"],
         ["BLX-a", "LX", "SBX", "SAX"],
@@ -431,6 +442,7 @@ def print_decision_trees() -> None:
             treeplots_fixed = []
             for treeplot in treeplots:
                 text = treeplot.get_text() 
+                # True and False labels aren't included in the visualization
                 if not any(x in text for x in ["True", "False"]):
                     treeplots_fixed.append(treeplot)
 
@@ -451,16 +463,23 @@ def do(model_dict: dict = None, feat_sets: list[str] = None, configs: list[str] 
     The default function for running the full pipeline of classification-based configurator models.
     '''
 
-    igd_array, igd_dict, _ = util.create_igd_array_and_dict('indicator_data\\igd_values_log.txt')
+    # load the IGD data as a dictionary
+    _, igd_dict, _ = util.create_igd_array_and_dict('indicator_data\\igd_values_log.txt')
 
+    # load the best configurations per problem
     Y = load_response_variables(problems_to_ignore)
 
+    # TODO: shouldn't be hardcoded
     labels = ['problem', 'algo', 'crossover', 'mutation', 'objectives', 'variables']
 
+    # allow user the set which ELA feature sets to use
     if feat_sets == None:
         feat_sets = util.get_default_aggregators()
 
+    # get ELA feature names
     labels = util.get_labels_from_file(labels, feat_sets)
+
+    # combine the datasets
     data = util.load_data(Y, feat_sets, problem_instances)
 
     # create a Pandas dataframe
@@ -474,15 +493,19 @@ def do(model_dict: dict = None, feat_sets: list[str] = None, configs: list[str] 
 
     # Custom scoring function based on Macro F1 score
     scorer = make_scorer(multioutput_macro_f1)
+
+    # allow user to set the models and their hyperparameter options for hyperparameter optimization
     if model_dict == None:
         model_dict = get_model_data()
     best_estimators = train_models(model_dict, scorer, X_train, y_train)
 
+    # allow user to set which configurations to use as benchmarks
     if configs == None:
         configs = util.get_benchmark_configurations()
 
     igd_value_sets = []
     config_labels = []
+    # loop through all models, evaluate the predictions and create plots
     for model_name, best_model in best_estimators.items():
         y_pred_test = evaluate_models(model_name, best_model, enc, X_test, y_test, y)
         y_pred_test_df = get_predicted_labels(y_pred_test, enc)

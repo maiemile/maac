@@ -18,6 +18,7 @@ app = FastAPI()
 re_problems = {"re31": reprob.RE31, "re32": reprob.RE32, "re33": reprob.RE33, "re34": reprob.RE34, "re37": reprob.RE37,
                "re41": reprob.RE41, "re42": reprob.RE42, "re61": reprob.RE61, "re91": reprob.RE91}
 
+
 def get_pymoo_problem(name: str, n_vars: int, n_objs: int):
     """
     Get a pymoo problem instance by name, number of variables, and number of objectives.
@@ -41,6 +42,7 @@ def evaluate(d: dict[str, list[float]], p: PymooParameters) -> dict[str, Any]:
 
     return d | output_df.to_dict(as_series=False)
 
+
 @app.get("/evaluate_re")
 def evaluate_re(d: dict[str, list[float]], p: PymooParameters) -> dict[str, Any]:
     """
@@ -54,14 +56,17 @@ def evaluate_re(d: dict[str, list[float]], p: PymooParameters) -> dict[str, Any]
     output_df = pl.DataFrame(output, schema=[f"f_{i+1}" for i in range(problem.n_objectives)])
     return d | output_df.to_dict(as_series=False)
 
+
 @app.get("/test")
 def test():
     return 1
+
 
 def start_server():
     import uvicorn
 
     uvicorn.run(app)
+
 
 if __name__ == "__main__":
     import uvicorn

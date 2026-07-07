@@ -63,6 +63,7 @@ def calc_pf_approx(prob):
         for line in chosen:
             file.write(" ".join(str(x) for x in line.tolist()) + "\n")
 
+
 if __name__ == "__main__":
     print("starting")
     problem_instances = util.get_problem_instances()
