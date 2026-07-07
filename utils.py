@@ -23,7 +23,7 @@ def load_files_config() -> bool:
     return load_from_files
 
 
-def create_igd_array_and_dict(file_name:str):
+def create_igd_array_and_dict(file_name:str) -> tuple[list[list], dict, list[list]]:
     '''
     Creates a dictionary and arrays for classification and regression separately.
     The data contains the problem, the IGD/IGD+ values and configuration in various formats.
@@ -170,7 +170,7 @@ def get_labels_from_file(labels: list[str], feat_sets: list[str]) -> list[str]:
     return labels
 
 
-def load_data(data_array, feat_sets:list[str], problem_instances):
+def load_data(data_array, feat_sets:list[str], problem_instances:list[list]) -> list[list]:
     '''
     Creates a list of data consisting of the problem name, number of objective function and decision variables,
     as well as the ELA features of the problem.
@@ -213,6 +213,7 @@ def save_and_print_results(result_dicts: list[dict], result_dict_names:list[str]
         res_dict = result_dicts[i]
         print(result_dict_names[i] + "\n")  
 
+        # sort according to the values in the dictionary
         sorted_res_dict = sorted(res_dict.items(), key=lambda kv: kv[1])    
 
         for values in sorted_res_dict:
@@ -220,6 +221,7 @@ def save_and_print_results(result_dicts: list[dict], result_dict_names:list[str]
 
         print("\n" + "="*30 +"\n")  
 
+        # only save the results if the result folder has been set
         if result_folder != None:
             # save the sorted results to text files
             path = Path(f'{result_folder}{result_dict_names[i]}.txt')
@@ -234,6 +236,7 @@ def get_dataframe_for_performance_profile(igd_dict:dict, configs:list[str], prob
     Returns a dataframe in a format that can be handled by the performance profile plots
     '''
 
+    # make sure igd_values are in the correct format
     if igd_values != None:
         try:
             if len(igd_values[0]) != None:
@@ -243,6 +246,7 @@ def get_dataframe_for_performance_profile(igd_dict:dict, configs:list[str], prob
     else:
         full_igd_values = []
 
+    # add data of the benchmark configurations if they exist
     if configs != None:
         for config in configs:
             igd_values_c = []
@@ -255,6 +259,7 @@ def get_dataframe_for_performance_profile(igd_dict:dict, configs:list[str], prob
     else:
         labels = config_labels
 
+    # convert to a dataframe
     igd_df = pd.DataFrame(np.array(full_igd_values).T, columns=labels)
 
     return igd_df
