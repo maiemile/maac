@@ -12,9 +12,16 @@ If you wish to run the entire pipeline of code, some libraries must be installed
 - pflacco
 - xgboost
 
+### Execute the pipeline (easy version)
+
+If you wish to run the entire pipeline (or some parts of it) with mostly default options, main.py is the way to go. 
+Simply run the file. You can customize which parts of the pipeline to run using the "pipeline" variable.
+TODO: the current version may not function with the existing datasets. If you wish to use the existing datasets,
+follow the instructions below.
+
 ### Conduct algorithm configuration runs
 
-The algorithm configurations are run on a set of problems using the file puhti_python_script.py.
+The algorithm configurations are run on a set of problems using the file run_experiments.py.
 
 ### Calculate exploratory landscape analysis (ELA) features
 
