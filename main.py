@@ -15,6 +15,9 @@ import calc_indicator_values
 
 if __name__ == "__main__":
 
+    num_of_repeats = 10
+    num_of_evaluations = 1000
+
     # TODO: need a better implementation for this
     pipeline = ["run_experiments", "approx_pf", "calculate_indicators"]
     #pipeline = ["classification", "regression"]

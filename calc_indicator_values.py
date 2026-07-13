@@ -33,6 +33,7 @@ def calculate_indicator_values(config:str, ideal_vector, nadir_vector, pf_approx
 
     log_path = Path(BASE_PATH + 'igd_values_log.txt')
     
+    # try to fetch the archive, in case it doesn't exist, log an error
     try:
         file_name = Path(BASE_PATH + 'archived_pops/' + config + '.txt')
         archive = np.array(pd.read_table(file_name, sep=" ", header=None))
@@ -43,15 +44,18 @@ def calculate_indicator_values(config:str, ideal_vector, nadir_vector, pf_approx
         prog_log.close()
         return
 
+    # archive normalization
     normalized_archive = (archive-ideal_vector) / (nadir_vector-ideal_vector)
     print("archive normalized", config, flush=True)
 
+    # normalize the PF approximation too
     normalized_pf_approx = (pf_approx-ideal_vector) / (nadir_vector-ideal_vector)
 
     # TOO SLOW FOR PROBLEMS WITH MANY OBJECTIVE FUNCTIONS
     #hypervolume_metric = hv(normalized_archive, 1.001)
     #print("hv calculated", config, flush=True)
 
+    # calculate IGD and IGD+ indicators
     regular_igd = distance_indicators(normalized_archive, normalized_pf_approx)
     igd_plus = igd_plus_indicator(normalized_archive, normalized_pf_approx)
     print("igd calculated", config, flush=True)
@@ -89,6 +93,7 @@ def do() -> None:
     not_completed = []
     completed_experiments = []
 
+    # load completed experiments if they exist
     try:
         with open(BASE_PATH + 'igd_values_log.txt', 'r') as file:
             for line in file:

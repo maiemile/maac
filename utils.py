@@ -230,7 +230,7 @@ def save_and_print_results(result_dicts: list[dict], result_dict_names:list[str]
                     file.write(" ".join(str(item) for item in line) + "\n")
 
 
-def get_dataframe_for_performance_profile(igd_dict:dict, configs:list[str], problems, igd_values=None, 
+def get_dataframe_for_performance_profile(igd_dict:dict, configs:list[str], problems:list[str], igd_values=None, 
                                           config_labels:list[str]=['configurator']) -> pd.DataFrame:
     '''
     Returns a dataframe in a format that can be handled by the performance profile plots

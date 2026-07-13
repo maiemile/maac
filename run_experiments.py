@@ -139,7 +139,7 @@ def simulator_problem(problem_name: str, n_vars: int, n_objs: int, server=False)
     )
 
 
-def run_experiment(prob_name: str, n_vars: int, n_objs: int, algo: str, cx: str, mx:str):
+def run_experiment(prob_name: str, n_vars: int, n_objs: int, algo: str, cx: str, mx:str) -> None:
     attempts = 0
 
     while attempts < 20:
@@ -272,10 +272,16 @@ def run_experiment(prob_name: str, n_vars: int, n_objs: int, algo: str, cx: str,
         logger.info('%s', log_text)
 
 
-def do() -> None:
+def do(num_of_repeats: int = 1, function_evaluations: int = 10000) -> None:
     print(cpu_count())
     # fetch the full experiment list
+    # TODO: use the "num_of_repeats" to set the number of seeds required,
+    # might be more sensible to do using the database
     experiment_list = get_experiments()
+
+    f_evaluations = function_evaluations
+
+    # TODO: check which experiments have been completed and remove them from the list
 
     print(len(experiment_list))
     
