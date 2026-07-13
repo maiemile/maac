@@ -11,7 +11,7 @@ import utils
 
 import numpy as np
 
-from desdeo.problem import Objective, Problem, Simulator, Variable
+from desdeo.problem import Objective, Problem, Simulator, Variable, Url
 from desdeo.emo.hooks.archivers import NonDominatedArchive
 from desdeo.emo.methods.templates import template1
 from desdeo.emo.operators.evaluator import EMOEvaluator
@@ -52,7 +52,7 @@ pop_sizes = {3: 105, 4: 120, 6: 132, 9: 210} # from the RVEA article, partially 
 _seed = 1
 f_evaluations = 10000
 
-logging.basicConfig(filename='indicator_values_final_pop_v3.log', level=logging.INFO)
+logging.basicConfig(filename='indicator_values_final_pop.log', level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
@@ -113,6 +113,9 @@ def simulator_problem(problem_name: str, n_vars: int, n_objs: int, server=False)
         for i in range(n_objs)
     ]
 
+    if server:
+        url = Url(url=file)
+
     return Problem(
         name="Simulator problem",
         description="",
@@ -122,7 +125,8 @@ def simulator_problem(problem_name: str, n_vars: int, n_objs: int, server=False)
             Simulator(
                 name="s_1",
                 symbol="s_1",
-                file=Path(file),
+                url=url,
+                #file=Path(file),
                 parameter_options={
                     "name": problem_name,
                     "n_vars": n_vars,
@@ -246,27 +250,19 @@ def run_experiment(prob_name, n_vars, n_objs, algo, cx, mx):
             evaluator=evaluator,
             repair=repair_func
         )
-
         objective_names = [obj.name for obj in prob.objectives]
-        final_pop = np.array(res.outputs[objective_names])
-
+        final_pop = np.array(res.optimal_outputs[objective_names])
         archived_solutions = np.array(archive.solutions[objective_names])
-
         # log the indicator values
-        file_name = Path(BASE_PATH + '/archived_pops_v3/' + prob_name_print + configuration + '.txt')
-
+        file_name = Path(BASE_PATH + 'archived_pops/' + prob_name_print + configuration + '.txt')
         # save the archived population to a txt file
         with open(file_name, "w") as file:
             for line in archived_solutions:
                 file.write(" ".join(str(x) for x in line.tolist()) + "\n")
-
-        file_name_fp = Path(BASE_PATH + '/archived_final_pops_v3/' + prob_name_print + configuration + '.txt')
-
+        file_name_fp = Path(BASE_PATH + 'archived_final_pops/' + prob_name_print + configuration + '.txt')
         with open(file_name_fp, "w") as file:
             for line in final_pop:
                 file.write(" ".join(str(x) for x in line.tolist()) + "\n") 
-
-
         log_text = prob_name_print + ' ' + algo + ' ' + cx + ' ' + mx
         logger.info('%s', log_text)
     except:
