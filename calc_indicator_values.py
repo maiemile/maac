@@ -15,7 +15,10 @@ problem_instances = util.get_problem_instances()
 algos, cxs, mxs = util.get_all_configuration_options()
 
 
-def get_experiments():
+def get_experiments() -> list[list]:
+    '''
+    Fetches the experiments consisting of a problem and a configuration as a list of lists.
+    '''
 
     # Enumerate all possible problem instance + config permutations
     prob_and_config_permutations = [prob + [a, cx, mx] for prob in problem_instances for a in algos for cx in cxs for mx in mxs]
@@ -23,7 +26,10 @@ def get_experiments():
     return prob_and_config_permutations
 
 
-def calculate_indicator_values(config, ideal_vector, nadir_vector, pf_approx):
+def calculate_indicator_values(config:str, ideal_vector, nadir_vector, pf_approx) -> None:
+    '''
+    Calculates the performance indicator values of the given configuration on a problem.
+    '''
 
     log_path = Path(BASE_PATH + 'igd_values_log.txt')
     
@@ -59,7 +65,11 @@ def calculate_indicator_values(config, ideal_vector, nadir_vector, pf_approx):
     return
 
 
-def calc_ind_val_problem(prob_name, n_vars, n_objs, algo, cx, mx):
+def calc_ind_val_problem(prob_name:str, n_vars:int, n_objs:int, algo:str, cx:str, mx:str) -> None:
+    '''
+    Helper function for fetching the Pareto front approximation as well as the ideal and nadir vectors 
+    of a given problem. Calls calculate_indicator_values with the given configuration and problem.
+    '''
     # create the unique problem name plus configuration
     prob_name_print = prob_name + '-' + str(n_objs) + 'obj'
     file_name = Path(BASE_PATH + 'approx_pfs/' + prob_name_print + '.txt')
@@ -74,10 +84,11 @@ def calc_ind_val_problem(prob_name, n_vars, n_objs, algo, cx, mx):
     return
 
 
-def do():
+def do() -> None:
     experiment_list = get_experiments()
     not_completed = []
     completed_experiments = []
+
     try:
         with open(BASE_PATH + 'igd_values_log.txt', 'r') as file:
             for line in file:
@@ -85,6 +96,7 @@ def do():
     except:
         pass
 
+    # find experiments that have already been completed
     for experiment in experiment_list:
         completed = False
         prob_name_print = experiment[0] + "-" + str(experiment[2]) + "obj"
