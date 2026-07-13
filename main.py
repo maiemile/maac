@@ -8,44 +8,48 @@ import regressor_models
 import sampling
 import igd_analysis
 import best_igd
-#import puhti_python_script 
-#import pf_approx_from_archives
-#import calc_indicator_values
+import run_experiments 
+import pf_approx_from_archives
+import calc_indicator_values
 
-# TODO: need a better implementation for this
-pipeline = ["classification", "regression"]
 
-# Make sure the folders where the figures are saved exist
-# if not, create the corresponding folders
-if not os.path.exists("figures\\confusion_matrices"):
-    os.makedirs("figures\\confusion_matrices")
-if not os.path.exists("figures\\perf_prof"):
-    os.makedirs("figures\\perf_prof")
-# TODO: there may be other paths that need to be checked
+if __name__ == "__main__":
 
-# TODO: eventually this file should contain all parts of the pipeline
-# TODO: remove hardcoded variables from files (beginning with classification and regression model files)
+    # TODO: need a better implementation for this
+    pipeline = ["run_experiments", "approx_pf", "calculate_indicators"]
+    #pipeline = ["classification", "regression"]
 
-#if "run_experiments" in pipeline:
-#   puhti_python_script.do()
+    # Make sure the folders where the figures are saved exist
+    # if not, create the corresponding folders
+    paths = ["archived_pops", "archived_final_pops", "approx_pfs", "figures\\confusion_matrices", "figures\\perf_prof"]
+    for path in paths:
+        if not os.path.exists(path):
+            os.makedirs(path)
 
-#if "approx_pf" in pipeline:
-#   pf_approx_from_archives.do()
+    # TODO: there may be other paths that need to be checked
 
-#if "calculate_indicators" in pipeline:
-#   calc_indicator_values.do()
+    # TODO: remove hardcoded variables from files (beginning with classification and regression model files)
 
-if "best_indicator" in pipeline:
-    best_igd.do()
+    if "run_experiments" in pipeline:
+       run_experiments.do()
 
-if "igd_analysis" in pipeline:
-    igd_analysis.do()
+    if "approx_pf" in pipeline:
+       pf_approx_from_archives.do()
 
-if "sampling" in pipeline:
-    sampling.do()
+    if "calculate_indicators" in pipeline:
+       calc_indicator_values.do()
 
-if "classification" in pipeline:
-    classification_models.do()
+    if "best_indicator" in pipeline:
+        best_igd.do()
 
-if "regression" in pipeline:
-    regressor_models.do()
+    if "igd_analysis" in pipeline:
+        igd_analysis.do()
+
+    if "sampling" in pipeline:
+        sampling.do()
+
+    if "classification" in pipeline:
+        classification_models.do()
+
+    if "regression" in pipeline:
+        regressor_models.do()

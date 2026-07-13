@@ -25,10 +25,10 @@ def get_experiments():
 
 def calculate_indicator_values(config, ideal_vector, nadir_vector, pf_approx):
 
-    log_path = Path(BASE_PATH + '/igd_values_log.txt')
+    log_path = Path(BASE_PATH + 'igd_values_log.txt')
     
     try:
-        file_name = Path(BASE_PATH + '/archived_pops_v3/' + config + '.txt')
+        file_name = Path(BASE_PATH + 'archived_pops/' + config + '.txt')
         archive = np.array(pd.read_table(file_name, sep=" ", header=None))
     except:
         log_text = config + " ERROR"
@@ -62,7 +62,7 @@ def calculate_indicator_values(config, ideal_vector, nadir_vector, pf_approx):
 def calc_ind_val_problem(prob_name, n_vars, n_objs, algo, cx, mx):
     # create the unique problem name plus configuration
     prob_name_print = prob_name + '-' + str(n_objs) + 'obj'
-    file_name = Path(BASE_PATH + '/approx_pfs_v3/' + prob_name_print + '.txt')
+    file_name = Path(BASE_PATH + 'approx_pfs/' + prob_name_print + '.txt')
     pf_approx = np.array(pd.read_table(file_name, sep=" ", header=None))
     print("PF approx fetched", prob_name_print, flush=True)
     ideal_vector = np.min(pf_approx, axis=0)
@@ -74,14 +74,16 @@ def calc_ind_val_problem(prob_name, n_vars, n_objs, algo, cx, mx):
     return
 
 
-if __name__ == "__main__":
-
+def do():
     experiment_list = get_experiments()
     not_completed = []
     completed_experiments = []
-    with open(BASE_PATH + '/igd_values_log.txt', 'r') as file:
-        for line in file:
-            completed_experiments.append(line)
+    try:
+        with open(BASE_PATH + 'igd_values_log.txt', 'r') as file:
+            for line in file:
+                completed_experiments.append(line)
+    except:
+        pass
 
     for experiment in experiment_list:
         completed = False

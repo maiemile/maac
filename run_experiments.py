@@ -8,7 +8,9 @@ from multiprocessing import Pool, cpu_count
 from pathlib import Path
 import logging
 import utils
-
+import requests
+import time
+from pymoo_server import start_server
 import numpy as np
 
 from desdeo.problem import Objective, Problem, Simulator, Variable, Url
@@ -47,7 +49,7 @@ crossovers = {"SBX": SimulatedBinaryCrossover, "Balpha": BlendAlphaCrossover, "S
 mutations = {"BPM": BoundedPolynomialMutation, "MPTM": MPTMutation, "NUM": NonUniformMutation, "PM": PowerMutation}
 re_problems = {"re31": reprob.RE31, "re32": reprob.RE32, "re33": reprob.RE33, "re34": reprob.RE34, "re37": reprob.RE37,
                "re41": reprob.RE41, "re42": reprob.RE42, "re61": reprob.RE61, "re91": reprob.RE91}
-pop_sizes = {3: 105, 4: 120, 6: 132, 9: 210} # from the RVEA article, partially interpolated
+pop_sizes = utils.get_default_pop_sizes() # from the RVEA article, partially interpolated
 
 _seed = 1
 f_evaluations = 10000
@@ -56,7 +58,7 @@ logging.basicConfig(filename='indicator_values_final_pop.log', level=logging.INF
 logger = logging.getLogger(__name__)
 
 
-def get_experiments():
+def get_experiments() -> list[list]:
 
     # all the problems instances
     problem_instances = utils.get_problem_instances()
@@ -137,9 +139,7 @@ def simulator_problem(problem_name: str, n_vars: int, n_objs: int, server=False)
     )
 
 
-def run_experiment(prob_name, n_vars, n_objs, algo, cx, mx):
-    import requests
-    import time
+def run_experiment(prob_name: str, n_vars: int, n_objs: int, algo: str, cx: str, mx:str):
     attempts = 0
 
     while attempts < 20:
@@ -152,8 +152,9 @@ def run_experiment(prob_name, n_vars, n_objs, algo, cx, mx):
             time.sleep(10)
 
     # create a unique problem name
-    prob_name_print = prob_name + '-' + str(n_objs) + 'obj'
-    configuration = "-" + algo + "-" + cx + "-" + mx
+    # TODO: replace problem data and config data with their ids from the corresponding tables?
+    prob_name_print = prob_name + '-' + str(n_objs) + 'obj' #+ '-' + str(n_vars) + 'var-' + str(f_evaluations) + 'eval-' + str(_seed) 
+    configuration = "-" + algo + "-" + cx + "-" + mx 
 
     # create a DESDEO problem object for simulator-based problems 
     prob = simulator_problem(prob_name, n_vars, n_objs, True)
@@ -271,15 +272,12 @@ def run_experiment(prob_name, n_vars, n_objs, algo, cx, mx):
         logger.info('%s', log_text)
 
 
-if __name__ == "__main__":
-
+def do() -> None:
     print(cpu_count())
     # fetch the full experiment list
     experiment_list = get_experiments()
 
     print(len(experiment_list))
-    
-    from pymoo_server import start_server
     
     # Create a pool of workers and run the function processImage for each filepath in the list
     with Pool(processes=20) as pool:
@@ -287,3 +285,10 @@ if __name__ == "__main__":
         pool.starmap(run_experiment, experiment_list)
         pool.terminate()
         pool.join()
+
+
+if __name__ == "__main__":
+    experiment_list = get_experiments()
+    for experiment in experiment_list:
+        prob_name, n_vars, n_obj, algo, cx, mx = experiment
+        run_experiment(prob_name, n_vars, n_obj, algo, cx, mx)

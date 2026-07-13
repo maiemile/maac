@@ -7,21 +7,18 @@ from pathlib import Path
 from scipy.spatial.distance import cdist
 
 import numpy as np
-
 from pathlib import Path
-
 import pandas as pd
 
 from desdeo.tools.non_dominated_sorting import non_dominated_merge
 import polars as pl
-from multiprocessing import Pool
 import utils as util
 
 ######################################################
 
 algos, cxs, mxs = util.get_all_configuration_options()
 
-def calc_pf_approx(prob):
+def calc_pf_approx(prob:str) -> None:
     prob_name_print = prob
     pf = []
     counter = 0
@@ -30,7 +27,7 @@ def calc_pf_approx(prob):
             for algo in algos:      
                 configuration = "-" + algo + "-" + cx + "-" + mx
                 try:
-                    path = Path(BASE_PATH + '/archived_pops_v3/' + prob_name_print + configuration + '.txt')
+                    path = Path(BASE_PATH + 'archived_pops/' + prob_name_print + configuration + '.txt')
                     pf2 = np.array(pd.read_table(path, sep=" ", header=None))
                 except:
                     continue
@@ -58,13 +55,15 @@ def calc_pf_approx(prob):
             print(prob_name_print, i)
     else:
         chosen = pf
-    path = Path(BASE_PATH + '/approx_pfs_v3/' + prob_name_print + '.txt')
+    path = Path(BASE_PATH + 'approx_pfs/' + prob_name_print + '.txt')
     with open(path, "w") as file:
         for line in chosen:
             file.write(" ".join(str(x) for x in line.tolist()) + "\n")
 
 
-if __name__ == "__main__":
+def setup_multiprocessing() -> None:
+    from multiprocessing import Pool
+
     print("starting")
     problem_instances = util.get_problem_instances()
     
@@ -77,4 +76,18 @@ if __name__ == "__main__":
         pool.map(calc_pf_approx, probs)
         pool.terminate()
         pool.join()
-        
+
+
+def do() -> None:
+    setup_multiprocessing()
+
+
+if __name__ == "__main__":
+    problem_instances = util.get_problem_instances()
+    
+    probs = []
+    
+    for prob in problem_instances:
+        probs.append(prob[0]+'-'+str(prob[2])+'obj')
+
+    calc_pf_approx(probs)
