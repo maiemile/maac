@@ -119,14 +119,10 @@ def generate_ea_table(options:dict) -> None:
     unique = unique[:-2]+""")"""
     sql_statement += unique + """\n);"""
 
-    #print(sql_statement)
-
     create_table(sql_statement)
     
     # iterate the list of options to get all possible combinations
     all_combinations = list(itertools.product(*option_lists))
-
-    #print(all_combinations)
 
     # create the insert statement
     sql = f'''INSERT INTO eas('''
@@ -137,7 +133,6 @@ def generate_ea_table(options:dict) -> None:
         sql += '''?,'''
     sql = sql[:-1] + ''')'''
 
-    #print(sql)
 
     insert_data(sql, all_combinations)
 
@@ -207,8 +202,6 @@ def generate_run_table(n_of_repeats:list[int]=[1], target_evals:list[int]=[10000
         for j in range(repeats):
             full_data = [ea_ids_list, prob_ids_list, [j+1], [target_evals[i]]]
             all_combinations = list(itertools.product(*full_data))
-            #print(len(all_combinations))
-            #print(all_combinations)
 
             # create the insert statement
             sql_statement = f'''INSERT INTO runs(ea_id,problem_id,seed,target_evals)

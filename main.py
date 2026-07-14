@@ -33,6 +33,8 @@ if __name__ == "__main__":
 
     # TODO: remove hardcoded variables from files (beginning with classification and regression model files)
 
+    # TODO: add database generation + params
+
     if "run_experiments" in pipeline:
        run_experiments.do()
 
