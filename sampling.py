@@ -1,7 +1,6 @@
 # Code by @maiemile
 
 from scipy.stats import qmc, entropy
-import reproblem as reprob
 from pymoo.problems import get_problem
 import numpy as np
 from pflacco.classical_ela_features import (calculate_ela_meta, calculate_ela_distribution, calculate_pca, calculate_nbc,
@@ -11,8 +10,7 @@ from desdeo.tools.non_dominated_sorting import fast_non_dominated_sort_indices
 from scipy.spatial.distance import pdist
 import utils as util
 
-re_problems = {"re31": reprob.RE31, "re32": reprob.RE32, "re33": reprob.RE33, "re34": reprob.RE34, "re37": reprob.RE37,
-               "re41": reprob.RE41, "re42": reprob.RE42, "re61": reprob.RE61, "re91": reprob.RE91}
+re_problems = util.get_re_problems()
 
 
 def sample_problem(problem):

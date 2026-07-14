@@ -7,6 +7,7 @@ import os
 import pandas as pd
 import numpy as np
 import perfprof
+import reproblem as reprob
 
 
 def load_files_config() -> bool:
@@ -76,6 +77,14 @@ def get_problem_instances() -> list[list]:
         #["re42", 6, 4],["re61", 3, 6], 
     ]
     return problem_instances
+
+
+def get_re_problems() -> dict:
+    '''
+    Returns all RE problems in a dictionary. Each value is the function for evaluating a solution on the problem.
+    '''
+    return {"re31": reprob.RE31, "re32": reprob.RE32, "re33": reprob.RE33, "re34": reprob.RE34, "re37": reprob.RE37,
+               "re41": reprob.RE41, "re42": reprob.RE42, "re61": reprob.RE61, "re91": reprob.RE91}
 
 
 def get_test_problems() -> list[str]:

@@ -7,7 +7,7 @@ import polars as pl
 from fastapi import FastAPI
 from pydantic import BaseModel
 from pymoo.problems import get_problem
-import reproblem as reprob
+import utils as util
 
 class PymooParameters(BaseModel):
     name: str
@@ -15,8 +15,7 @@ class PymooParameters(BaseModel):
     n_objs: int = 2
 
 app = FastAPI()
-re_problems = {"re31": reprob.RE31, "re32": reprob.RE32, "re33": reprob.RE33, "re34": reprob.RE34, "re37": reprob.RE37,
-               "re41": reprob.RE41, "re42": reprob.RE42, "re61": reprob.RE61, "re91": reprob.RE91}
+re_problems = util.get_re_problems()
 
 
 def get_pymoo_problem(name: str, n_vars: int, n_objs: int):

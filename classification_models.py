@@ -21,7 +21,7 @@ from sklearn.preprocessing import LabelEncoder, StandardScaler
 from sklearn.feature_selection import SelectKBest, f_classif
 from sklearn.neural_network import MLPClassifier
 from sklearn import tree
-from matplotlib.colors import ListedColormap, to_rgb
+from matplotlib.colors import to_rgb
 
 # all the problems instances
 problem_instances = util.get_problem_instances()

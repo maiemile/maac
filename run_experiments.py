@@ -38,7 +38,6 @@ from desdeo.problem.schema import (
     Variable,
 )
 
-import reproblem as reprob
 from desdeo.tools.utils import repair
 
 
@@ -47,8 +46,7 @@ algorithms = {"nsga3": NSGA3Selector, "rvea": RVEASelector, "ibea": IBEASelector
 crossovers = {"SBX": SimulatedBinaryCrossover, "Balpha": BlendAlphaCrossover, "Single": SingleArithmeticCrossover, 
               "Local": LocalCrossover}
 mutations = {"BPM": BoundedPolynomialMutation, "MPTM": MPTMutation, "NUM": NonUniformMutation, "PM": PowerMutation}
-re_problems = {"re31": reprob.RE31, "re32": reprob.RE32, "re33": reprob.RE33, "re34": reprob.RE34, "re37": reprob.RE37,
-               "re41": reprob.RE41, "re42": reprob.RE42, "re61": reprob.RE61, "re91": reprob.RE91}
+re_problems = utils.get_re_problems()
 pop_sizes = utils.get_default_pop_sizes() # from the RVEA article, partially interpolated
 
 _seed = 1
