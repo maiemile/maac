@@ -172,6 +172,7 @@ def generate_run_table(n_of_repeats:list[int]=[1], target_evals:list[int]=[10000
     if len(n_of_repeats) != len(target_evals):
         raise Exception('The length of n_of_repeats and target_evals must be equal')
     # TODO: exception if n_of_repeats < 1 or target_evals < 1
+    # TODO: add indicator columns
     table_sql = '''CREATE TABLE IF NOT EXISTS runs(
             run_id INTEGER PRIMARY KEY AUTOINCREMENT, 
             ea_id INTEGER NOT NULL,
