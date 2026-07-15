@@ -7,6 +7,8 @@ import re
 # TODO: when new parameter options are given, create new columns, unique must be updated
 
 pattern = "^[A-Za-z0-9_-]*$"
+
+# TODO: this should be loaded from the config file/user input
 database = "maac.db"
 
 def check_key(key:str) -> None:
@@ -19,7 +21,7 @@ def check_key(key:str) -> None:
         raise Exception(f'Invalid value: {key}. The value must correspond to the pattern {pattern}.')
     
 
-def query_data(sql_statement:str) -> list:
+def query_data(sql_statement:str, qmark:tuple=None) -> list:
     '''
     Queries data according to the provided SQL statement.
     Return the data as a list of tuples.
@@ -28,10 +30,20 @@ def query_data(sql_statement:str) -> list:
     try:
         with sqlite3.connect(database) as conn:
             cur = conn.cursor()
-            cur.execute(sql_statement)
+            if qmark == None:
+                cur.execute(sql_statement)
+                
+            #If the user has given parameters, fill them in the SQL statement
+            else:
+                cur.execute(sql_statement, qmark)
             rows = cur.fetchall()
-            for row in rows:
-                data.append(row)
+
+            # deal with 1 row or 2<= rows of data separately
+            if len(rows) == 1:
+                data = rows[0]
+            else:
+                for row in rows:
+                    data.append(row)
     except sqlite3.Error as e:
         print(e)
 
@@ -132,7 +144,6 @@ def generate_ea_table(options:dict) -> None:
     for _ in range(len(keys)):
         sql += '''?,'''
     sql = sql[:-1] + ''')'''
-
 
     insert_data(sql, all_combinations)
 
