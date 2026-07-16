@@ -11,6 +11,7 @@ import best_igd
 import run_experiments 
 import pf_approx_from_archives
 import calc_indicator_values
+import generate_database
 
 
 if __name__ == "__main__":
@@ -19,7 +20,7 @@ if __name__ == "__main__":
     num_of_evaluations = 1000
 
     # TODO: need a better implementation for this
-    pipeline = ["run_experiments", "approx_pf", "calculate_indicators"]
+    pipeline = ["run_experiments"]#, "approx_pf", "calculate_indicators"]
     #pipeline = ["classification", "regression"]
 
     # Make sure the folders where the figures are saved exist
@@ -34,6 +35,9 @@ if __name__ == "__main__":
     # TODO: remove hardcoded variables from files (beginning with classification and regression model files)
 
     # TODO: add database generation + params
+
+    if "generate_database" in pipeline:
+        generate_database.do()
 
     if "run_experiments" in pipeline:
        run_experiments.do()

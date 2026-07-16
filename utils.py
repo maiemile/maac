@@ -8,20 +8,31 @@ import pandas as pd
 import numpy as np
 import perfprof
 import reproblem as reprob
+import csv
+from pathlib import Path
 
 
-def load_files_config() -> bool:
+def write_to_csv(file:Path, data:np.array) -> None:
     '''
-    Reads the config.txt file and returns the value of the "load_models" variable.
+    Writes a CSV file at the given file using the data.
+    '''
+    with open(file, 'w', newline='') as csvfile:
+        writer = csv.writer(csvfile)
+        writer.writerows(data) 
+
+
+def load_param_config(param:str) -> bool | str:
+    '''
+    Reads the config.txt file and returns the value of requested parameter.
     '''
 
     # use the config file to determine whether to load configurator models from files or training new ones
     config_parser = configparser.RawConfigParser()   
     config_path = Path("config.txt")
     config_parser.read(config_path)
-    load_from_files = config_parser.get('general', 'load_models')
+    param_value = config_parser.get('general', param)
 
-    return load_from_files
+    return param_value
 
 
 def create_igd_array_and_dict(file_name:str) -> tuple[list[list], dict, list[list]]:

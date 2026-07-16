@@ -1,8 +1,5 @@
 # Code by @maiemile
 
-# quick setup for the baseline path
-BASE_PATH = ''
-
 from desdeo.tools.indicators_unary import hv, igd_plus_indicator, distance_indicators
 from pathlib import Path
 import numpy as np
@@ -13,7 +10,7 @@ import utils as util
 # all the problems instances
 problem_instances = util.get_problem_instances()
 algos, cxs, mxs = util.get_all_configuration_options()
-
+BASE_PATH = util.load_param_config('base_path')
 
 def get_experiments() -> list[list]:
     '''

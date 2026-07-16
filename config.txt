@@ -1,2 +1,4 @@
 [general]
 load_models = True
+database_file = 'maac.db'
+base_path = ''

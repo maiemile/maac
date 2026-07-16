@@ -3,13 +3,14 @@
 import sqlite3
 import itertools
 import re
+import utils as util
 
 # TODO: when new parameter options are given, create new columns, unique must be updated
 
 pattern = "^[A-Za-z0-9_-]*$"
 
-# TODO: this should be loaded from the config file/user input
-database = "maac.db"
+# Load the filename of the database
+database = util.load_param_config('database_file')
 
 def check_key(key:str) -> None:
     '''
@@ -173,7 +174,7 @@ def generate_problem_table(problems:list[str,int,int]) -> None:
     insert_data(sql, problems)
 
 
-def generate_run_table(n_of_repeats:list[int]=[1], target_evals:list[int]=[10000]) -> None:
+def generate_run_table(n_of_repeats:list[int], target_evals:list[int]) -> None:
     '''
     Generates an SQL table of all algorithm configuration runs.
     A separate row is created for each configuration + problem pair. 
@@ -222,12 +223,15 @@ def generate_run_table(n_of_repeats:list[int]=[1], target_evals:list[int]=[10000
 
     
 # TODO: this dictionary should be given by the user/read from json files
-options = {"selection": ["TEXT", ["IBEA", "NSGA-III", "RVEA"]], "crossover": ["TEXT", ["SBX", "SAX"]], "mutation": ["TEXT", ["BPM", "NUM"]]}
+#options = {"selection": ["TEXT", ["IBEA", "NSGA-III", "RVEA"]], "crossover": ["TEXT", ["SBX", "SAX"]], "mutation": ["TEXT", ["BPM", "NUM"]]}
+options = {"selection": ["TEXT", ["IBEA","NSGA-III"]], "crossover": ["TEXT", ["SBX","SAX"]], "mutation": ["TEXT", ["BPM","NUM"]]}
 problems = [
-        ["dtlz1", 3, 7],["dtlz2", 3, 10],["dtlz3", 3, 10],["dtlz4", 3, 10],["dtlz5", 3, 10],["dtlz6", 3, 10],["dtlz7", 3, 10]]
+        ["dtlz1", 3, 7],#["dtlz2", 3, 10],["dtlz3", 3, 10],["dtlz4", 3, 10],["dtlz5", 3, 10],["dtlz6", 3, 10],["dtlz7", 3, 10],
+        ["wfg1", 3, 10]
+        ]
 
 
-def do(n_of_repeats:list[int], target_evals:list[int]) -> None:
+def do(n_of_repeats:list[int]=[1], target_evals:list[int]=[10000]) -> None:
     '''
     Main function for generating and populating 3 SQL tables in a database:
     1) EA table 2) problem table 3) run table
@@ -235,3 +239,7 @@ def do(n_of_repeats:list[int], target_evals:list[int]) -> None:
     generate_ea_table(options)
     generate_problem_table(problems)
     generate_run_table(n_of_repeats=n_of_repeats, target_evals=target_evals)
+
+
+if __name__ == "__main__":
+    do(n_of_repeats=[1], target_evals=[1000])

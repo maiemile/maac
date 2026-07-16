@@ -1,7 +1,5 @@
 # code by @maiemile
 
-# quick setup for the baseline path
-BASE_PATH = ''
 
 from pathlib import Path
 from scipy.spatial.distance import cdist
@@ -17,6 +15,7 @@ import utils as util
 ######################################################
 
 algos, cxs, mxs = util.get_all_configuration_options()
+BASE_PATH = util.load_param_config('base_path')
 
 def calc_pf_approx(prob:str, pf_approx_size:int=2000) -> None:
     '''

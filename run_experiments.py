@@ -1,8 +1,5 @@
 # code by @maiemile
 
-# quick setup for the baseline path
-BASE_PATH = ''
-
 import random
 from multiprocessing import Pool, cpu_count
 from pathlib import Path
@@ -39,7 +36,7 @@ from desdeo.problem.schema import (
 )
 
 from desdeo.tools.utils import repair
-
+BASE_PATH = utils.load_param_config('base_path')
 
 # dictionaries to fetch classes of operators from DESDEO or problems from separate files
 algorithms = {"nsga3": NSGA3Selector, "rvea": RVEASelector, "ibea": IBEASelector}
@@ -283,7 +280,7 @@ def do(num_of_repeats: int = 1, function_evaluations: int = 10000) -> None:
 
     print(len(experiment_list))
     
-    # Create a pool of workers and run the function processImage for each filepath in the list
+    # Create a pool of workers and run the function run_experiment for each filepath in the list
     with Pool(processes=20) as pool:
         pool.apply_async(start_server)
         pool.starmap(run_experiment, experiment_list)
