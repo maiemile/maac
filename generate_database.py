@@ -231,6 +231,34 @@ def generate_run_table(n_of_repeats:list[int], target_evals:list[int]) -> None:
             insert_data(sql_statement, all_combinations)
 
 
+def generate_feature_table(feature_names:list[str]) -> str:
+    '''
+    Generates a table for ELA features and returns the corresponding SQL INSERT statement.
+    Each column corresponds to one feature. 
+    '''
+
+    sql_statement =  """CREATE TABLE IF NOT EXISTS features (
+        problem_id INTEGER PRIMARY KEY """
+    
+    for feat_name in feature_names:
+        # add new column to SQL statement
+        sql_statement += f",\n{feat_name} REAL"
+    sql_statement += ",\nFOREIGN KEY(problem_id) REFERENCES problems(problem_id));"
+    # create the features table
+    create_table(sql_statement)
+
+    # create the insert statement
+    sql = f'''INSERT INTO features(problem_id,'''
+    for key in feature_names:
+        sql += f'''{key},'''
+    sql = sql[:-1] + ''')\nVALUES('''
+    for _ in range(len(feature_names)+1): # +1 to account for problem_id
+        sql += '''?,'''
+    sql = sql[:-1] + ''')'''
+
+    return sql
+
+
 def do(setup: util.ExperimentalSetup, n_of_repeats:list[int]=[1], target_evals:list[int]=[10000]) -> None:
     '''
     Main function for generating and populating 3 SQL tables in a database:

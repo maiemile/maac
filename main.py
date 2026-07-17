@@ -8,7 +8,7 @@ import regressor_models
 import sampling
 import igd_analysis
 import best_igd
-import run_experiments2
+import run_experiments
 import pf_approx_from_archives
 import calc_indicator_values
 import generate_database
@@ -84,7 +84,7 @@ if __name__ == "__main__":
         generate_database.do(setup)
 
     if "run_experiments" in pipeline:
-       run_experiments2.do(setup)
+       run_experiments.do()
 
     if "approx_pf" in pipeline:
        pf_approx_from_archives.do()
