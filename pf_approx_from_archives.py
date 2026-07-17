@@ -88,7 +88,8 @@ def setup_multiprocessing() -> None:
     for prob in problem_instances:
         fixed_prob_instances.append(prob[0])
 
-    with Pool(processes=2) as pool:
+    # spread the calculations across the CPUs with multiprocessing
+    with Pool(processes=cpu_count()) as pool:
         pool.map(calc_pf_approx, fixed_prob_instances)
         pool.terminate()
         pool.join()
