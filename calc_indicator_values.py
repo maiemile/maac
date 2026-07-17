@@ -28,6 +28,9 @@ def calculate_indicator_values(config:str, ideal_vector, nadir_vector, pf_approx
     Calculates the performance indicator values of the given configuration on a problem.
     '''
 
+    # TODO: given the run_id, get the archive, PF approx (+ ideal/nadir)
+    # calculate the indicators and save them to 'runs' using the run_id
+
     log_path = Path(BASE_PATH + 'igd_values_log.txt')
     
     # try to fetch the archive, in case it doesn't exist, log an error
@@ -71,6 +74,9 @@ def calc_ind_val_problem(prob_name:str, n_vars:int, n_objs:int, algo:str, cx:str
     Helper function for fetching the Pareto front approximation as well as the ideal and nadir vectors 
     of a given problem. Calls calculate_indicator_values with the given configuration and problem.
     '''
+
+    # TODO: given the problem_id, get the corresponding PF approx file
+
     # create the unique problem name plus configuration
     prob_name_print = prob_name + '-' + str(n_objs) + 'obj'
     file_name = Path(BASE_PATH + 'approx_pfs/' + prob_name_print + '.txt')
@@ -86,6 +92,11 @@ def calc_ind_val_problem(prob_name:str, n_vars:int, n_objs:int, algo:str, cx:str
 
 
 def do() -> None:
+    # TODO:
+    # Get all run ids from the 'runs' table
+    # List the runs that have corresponding archives and calculate indicators on them,
+    # but only if the run_id is missing the indicator values in the table
+
     experiment_list = get_experiments()
     not_completed = []
     completed_experiments = []

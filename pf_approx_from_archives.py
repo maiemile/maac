@@ -28,6 +28,10 @@ def calc_pf_approx(prob:str, pf_approx_size:int=2000) -> None:
     pf = []
     counter = 0
 
+    # TODO: given a problem id, select all runs with the corresponding problem id
+    # then, use the run ids to get the archives
+    # using these archives, create the PF approximation
+
     # loop through all configurations
     for cx in cxs:
         for mx in mxs:
@@ -83,6 +87,9 @@ def setup_multiprocessing() -> None:
     from multiprocessing import Pool
 
     print("starting")
+
+    # TODO: load problem ids from the database
+
     problem_instances = util.get_problem_instances()
     
     probs = []
