@@ -5,10 +5,10 @@ from pymoo.problems import get_problem
 import numpy as np
 from pflacco.classical_ela_features import (calculate_ela_meta, calculate_ela_distribution, calculate_pca, calculate_nbc,
                                             calculate_dispersion, calculate_information_content, calculate_ela_level)
-from pathlib import Path
 from desdeo.tools.non_dominated_sorting import fast_non_dominated_sort_indices
 from scipy.spatial.distance import pdist
 import utils as util
+from generate_database import query_data, generate_feature_table, insert_data
 
 re_problems = util.get_re_problems()
 
@@ -20,9 +20,9 @@ def sample_problem(problem):
     and the decision vectors are evaluated to get the objective vectors.
     Works for RE, WFG and DTLZ problem suites.
     '''
-    prob_name = problem[0]
-    n_var = problem[1]
+    prob_name = problem[1]
     n_obj = problem[2]
+    n_var = problem[3]
 
     # get the lower and upper bounds of the problem
     if prob_name[:2] == 're':
@@ -51,6 +51,7 @@ def sample_problem(problem):
         for row in fixed_sample:
             evaluated.append(prob.evaluate(row).tolist())
         evaluated = np.array(evaluated)
+    # TODO: use built-in DESDEO constructor for pymoo problems, evaluate directly, can fetch lower/upper bounds from the object earlier?
     else:
         problem_pymoo = get_problem(prob_name, n_var=n_var, n_obj=n_obj)
         out = {}
@@ -148,19 +149,23 @@ def do(aggregators: list[str] = None):
         'max', 'min', 'avg', 'sd', 'nds', 'moo' 
     '''
 
-    # all problems instances
-    problem_instances = util.get_problem_instances()
+    # load all problem instances from the database
+    sql_query = '''SELECT * from problems'''
+    problem_instances = query_data(sql_query)
 
+    # if no aggregators were given, use the defaults
     if aggregators == None:
-        util.get_default_aggregators()
+        aggregators = util.get_default_aggregators()
 
+    table_created = False
+    sql = None
+
+    # loop through all problems and calculate the ELA features
     for prob in problem_instances:
         X, y = sample_problem(prob)
 
-        prob_name = prob[0]
-        n_var = prob[1]
-        n_obj = prob[2]
-
+        prob_id = prob[0]
+        
         dictionaries = []
         # calculate the features one objective function at a time
         # Currently, 7 feature sets can be calculated without 
@@ -183,7 +188,6 @@ def do(aggregators: list[str] = None):
             values = np.array([d[key] for d in dictionaries])
             sd_dict[key] = np.std(values)
 
-
         # do non-dominated sorting on the sample 
         # then, use the front numbers as the "scalarized" objective functions to calculate ELA features
         nds_indices = fast_non_dominated_sort_indices(y)
@@ -204,15 +208,25 @@ def do(aggregators: list[str] = None):
         dict_names = {"max":max_dict, "min": min_dict, "avg": avg_dict, "sd": sd_dict, "nds": nds_ela_dict, "moo": moo_ela_dict}
         dicts = [dict_names[agg] for agg in aggregators]
 
-        prob_name_print = prob_name+'-'+str(n_obj)+'obj'
+        # create lists of feature names and values
+        feature_names = []
+        feature_values = []
         for i in range(len(dicts)):
-            path = Path('ela_features\\' + prob_name_print + '_' + aggregators[i] + '.txt')
-            with open(path, "w") as file:
-                for k, v in dicts[i].items():
-                    if 'runtime' in k:
-                        continue
-                    file.write(k + " " + str(v) + "\n")
-        print(prob_name_print, "done")
+            for k, v in dicts[i].items():
+                if 'runtime' in k:
+                    continue
+                feature_name = k + '_' + aggregators[i]
+                # replace dots with underscores for SQLite
+                feature_names.append(feature_name.replace('.', '_'))
+                feature_values.append(v)
+        
+        # check that the features table exists and fetch the SQL for data insertion
+        if not table_created:
+            sql = generate_feature_table(feature_names)
+            table_created = True
+
+        # insert a row of data
+        insert_data(sql, [[int(prob_id)] + feature_values])
 
 
 if __name__ == "__main__":

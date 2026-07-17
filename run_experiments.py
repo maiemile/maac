@@ -1,295 +1,122 @@
 # code by @maiemile
 
-import random
-from multiprocessing import Pool, cpu_count
-from pathlib import Path
-import logging
-import utils
-import requests
-import time
-from pymoo_server import start_server
+from desdeo.emo import (
+    algorithms,termination,generator,repair
+)
+from desdeo.problem.external import pymoo_provider
 import numpy as np
+from pathlib import Path
+import os.path
+from multiprocessing import Pool, cpu_count
 
-from desdeo.problem import Objective, Problem, Simulator, Variable, Url
-from desdeo.emo.hooks.archivers import NonDominatedArchive
-from desdeo.emo.methods.templates import template1
-from desdeo.emo.operators.evaluator import EMOEvaluator
-from desdeo.emo.operators.mutation import (BoundedPolynomialMutation, NonUniformMutation, MPTMutation,
-                                            PowerMutation)
-from desdeo.emo.operators.crossover import (SimulatedBinaryCrossover, BlendAlphaCrossover, 
-                                            SingleArithmeticCrossover, LocalCrossover)
-from desdeo.emo.operators.termination import MaxEvaluationsTerminator
-from desdeo.tools.patterns import Publisher
-from desdeo.emo.operators.selection import (
-    NSGA3Selector,
-    RVEASelector,
-    ReferenceVectorOptions,
-    ParameterAdaptationStrategy,
-    IBEASelector
-)
-from desdeo.emo.operators.generator import RandomGenerator
-from desdeo.problem.schema import (
-    Objective,
-    Problem,
-    Simulator,
-    Variable,
-)
+from generate_database import query_data
+import utils as util
 
-from desdeo.tools.utils import repair
-BASE_PATH = utils.load_param_config('base_path')
+pop_sizes = util.get_default_pop_sizes()
 
-# dictionaries to fetch classes of operators from DESDEO or problems from separate files
-algorithms = {"nsga3": NSGA3Selector, "rvea": RVEASelector, "ibea": IBEASelector}
-crossovers = {"SBX": SimulatedBinaryCrossover, "Balpha": BlendAlphaCrossover, "Single": SingleArithmeticCrossover, 
-              "Local": LocalCrossover}
-mutations = {"BPM": BoundedPolynomialMutation, "MPTM": MPTMutation, "NUM": NonUniformMutation, "PM": PowerMutation}
-re_problems = utils.get_re_problems()
-pop_sizes = utils.get_default_pop_sizes() # from the RVEA article, partially interpolated
-
-_seed = 1
-f_evaluations = 10000
-
-logging.basicConfig(filename='indicator_values_final_pop.log', level=logging.INFO)
-logger = logging.getLogger(__name__)
+# Load the filename of the database and the base path
+database = util.load_param_config('database_file')
+BASE_PATH = str(util.load_param_config('base_path'))
 
 
-def get_experiments() -> list[list]:
+def run_experiment(run_id:int, ea_id:int, problem_id:int, seed:int, target_evals:int, options:dict) -> None:
+    '''
+    Run the experiment defined by run_id. Creates the EA template based on the ea_id, seed and target_evaluations.
+    Loads the problem defined by problem_id. Runs the EA configuration on that problem and stores the non-dominated
+    archive and final population in CSV files.
+    '''
 
-    # all the problems instances
-    problem_instances = utils.get_problem_instances()
-    algos, cxs, mxs = utils.get_all_configuration_options()
+    print(f"run ID: {run_id}, EA ID: {ea_id}, problem ID: {problem_id}, seed: {seed}, target evaluations: {target_evals}")
 
-    #####################################################3
+    # prepare SQL statements to fetch data on the EA configuration and problem
+    sql_statement = '''SELECT selection,crossover,mutation FROM eas WHERE ea_id = ?'''
+    ea_data = query_data(sql_statement, (ea_id,))
 
-    # Enumerate all possible problem instance + config permutations
-    prob_and_config_permutations = [prob + [a, cx, mx] for prob in problem_instances for a in algos for cx in cxs for mx in mxs]
+    sql_statement_prob = '''SELECT name,obj,var FROM problems WHERE problem_id = ?'''
+    prob_data = query_data(sql_statement_prob, (problem_id,))
 
-    # Randomize the order
-    random.seed(1)
-    random.shuffle(prob_and_config_permutations)
+    # unload the problem data
+    prob_name, n_obj, n_var = prob_data
+    pop_size = pop_sizes[n_obj]
+
+    # fetch the corresponding operators
+    main_template = options["selection"][1][ea_data[0]]
+    main_template.template.crossover = options["crossover"][1][ea_data[1]]
+    main_template.template.mutation = options["mutation"][1][ea_data[2]]
+
+    # max_generations must be set correctly for NUM
+    if ea_data[2] == "NUM":
+        main_template.template.mutation.max_generations = int(target_evals/pop_size) 
     
-    return prob_and_config_permutations
+    # fix the termination, generator and repair
+    main_template.template.termination = termination.MaxEvaluationsTerminatorOptions(max_evaluations=target_evals)
+    main_template.template.generator = generator.LHSGeneratorOptions(n_points = pop_size)
+    main_template.template.repair = repair.ClipRepairOptions()
+    main_template.template.seed = seed
 
-
-def simulator_problem(problem_name: str, n_vars: int, n_objs: int, server=False) -> Problem:
-    # define all the variables separately in DESDEO
-    file = "pymoo_simulator.py"
-    if server:
-        file = r"http://127.0.0.1:8000/evaluate"
-
-    if problem_name[:3] == 'wfg':
-        variables = [
-        Variable(name=f"x_{i+1}", symbol=f"x_{i+1}", variable_type="real", lowerbound=0, upperbound=2*(i+1))
-        for i in range(n_vars)
-        ]
-        
-    if problem_name[:2] == 're':
-        problem_class = re_problems[problem_name]
-        lowerbounds = problem_class().lbound
-        upperbounds = problem_class().ubound
-        if server:
-            file = r"http://127.0.0.1:8000/evaluate_re"
-        variables = [
-            Variable(name=f"x_{i+1}", symbol=f"x_{i+1}", variable_type="real", lowerbound=lowerbounds[i], upperbound=upperbounds[i])
-            for i in range(n_vars)
-        ]
-    if problem_name[:4] == 'dtlz':
-        variables = [
-            Variable(name=f"x_{i+1}", symbol=f"x_{i+1}", variable_type="real", lowerbound=0, upperbound=1)
-            for i in range(n_vars)
-        ]
-
-    # define all objectives for DESDEO based on the number of objective funcitions
-    objectives = [
-        Objective(
-            name=f"f_{i+1}",
-            symbol=f"f_{i+1}",
-            simulator_path=Path(file),  # simulator file
-            objective_type="simulator",
-        )
-        for i in range(n_objs)
-    ]
-
-    if server:
-        url = Url(url=file)
-
-    return Problem(
-        name="Simulator problem",
-        description="",
-        variables=variables,
-        objectives=objectives,
-        simulators=[
-            Simulator(
-                name="s_1",
-                symbol="s_1",
-                url=url,
-                #file=Path(file),
-                parameter_options={
-                    "name": problem_name,
-                    "n_vars": n_vars,
-                    "n_objs": n_objs,
-                },
-            )
-        ],
-    )
-
-
-def run_experiment(prob_name: str, n_vars: int, n_objs: int, algo: str, cx: str, mx:str) -> None:
-    attempts = 0
-
-    while attempts < 20:
-        try:
-            r = requests.get('http://127.0.0.1:8000/test')
-            r.raise_for_status()  # Raises a HTTPError if the status is 4xx, 5xxx
-            break
-        except:
-            attempts += 1
-            time.sleep(10)
-
-    # create a unique problem name
-    # TODO: replace problem data and config data with their ids from the corresponding tables?
-    prob_name_print = prob_name + '-' + str(n_objs) + 'obj' #+ '-' + str(n_vars) + 'var-' + str(f_evaluations) + 'eval-' + str(_seed) 
-    configuration = "-" + algo + "-" + cx + "-" + mx 
-
-    # create a DESDEO problem object for simulator-based problems 
-    prob = simulator_problem(prob_name, n_vars, n_objs, True)
-
-    pop_size = pop_sizes[n_objs]
+    # fix the population size for different operators
+    try:
+        main_template.template.selection.reference_vector_options.number_of_vectors = pop_size
+    except:
+        pass
 
     try:
-        algorithm_s = algorithms[algo]
-        crossover_s = crossovers[cx]
-        mutation_s = mutations[mx]
-        publisher = Publisher()
-        # EMOEvaluator is used to evaluate the solutions
-        evaluator = EMOEvaluator(
-            problem=prob,
-            publisher=publisher,
-            verbosity=2
-        )
-        crossover = crossover_s(
-            problem=prob,
-            publisher=publisher,
-            seed=_seed,
-            verbosity=1
-        )
-        if mx == "NUM":
-            mutation = mutation_s(
-                problem=prob,
-                publisher=publisher,
-                verbosity=1,
-                seed=_seed,
-                max_generations = int(f_evaluations/pop_size)
-            )
-        else:
-            mutation = mutation_s(
-                problem=prob,
-                publisher=publisher,
-                verbosity=1,
-                seed=_seed,
-            )
-        reference_vector_options = ReferenceVectorOptions(
-            number_of_vectors=pop_size,
-        )
-        if algo == "nsga3":
-            selector = algorithm_s(
-                problem=prob,
-                publisher=publisher,
-                reference_vector_options=reference_vector_options,
-                verbosity=2,
-            )
-        if algo == "rvea":
-            selector = algorithm_s(
-                problem=prob,
-                publisher=publisher,
-                reference_vector_options=reference_vector_options,
-                verbosity=2,
-                parameter_adaptation_strategy=ParameterAdaptationStrategy.FUNCTION_EVALUATION_BASED
-            )
-        if algo == "ibea":
-            selector = algorithm_s(
-                problem=prob,
-                verbosity=2,
-                publisher=publisher,
-                population_size=pop_size,
-            )
-        # generate the initial population randomly
-        generator = RandomGenerator(
-            problem=prob,
-            evaluator=evaluator,
-            publisher=publisher,
-            n_points=pop_size,
-            verbosity=2,
-            seed=_seed
-        )
-        terminator = MaxEvaluationsTerminator(f_evaluations, publisher=publisher)
-        archive = NonDominatedArchive(problem=prob, publisher=publisher)
-        # Register the components to the publisher
-        components = [evaluator, generator, crossover, mutation, selector, terminator, archive]
-        [publisher.auto_subscribe(x) for x in components]
-        [publisher.register_topics(x.provided_topics[x.verbosity], x.__class__.__name__) for x in components]
-        consistency_check = publisher.check_consistency()
-        # make sure the verbosity levels have been set on correct levels
-        if consistency_check[0] == False:
-            return
-        # makes sure the variables stay within the set bounds
-        repair_func = repair(
-            lower_bounds={v.symbol: v.lowerbound for v in prob.get_flattened_variables()},
-            upper_bounds={v.symbol: v.upperbound for v in prob.get_flattened_variables()},
-        )
-        res = template1(
-            crossover=crossover,
-            mutation=mutation,
-            selection=selector,
-            generator=generator,
-            terminator=terminator,
-            evaluator=evaluator,
-            repair=repair_func
-        )
-        objective_names = [obj.name for obj in prob.objectives]
-        final_pop = np.array(res.optimal_outputs[objective_names])
-        archived_solutions = np.array(archive.solutions[objective_names])
-        # log the indicator values
-        file_name = Path(BASE_PATH + 'archived_pops/' + prob_name_print + configuration + '.txt')
-        # save the archived population to a txt file
-        with open(file_name, "w") as file:
-            for line in archived_solutions:
-                file.write(" ".join(str(x) for x in line.tolist()) + "\n")
-        file_name_fp = Path(BASE_PATH + 'archived_final_pops/' + prob_name_print + configuration + '.txt')
-        with open(file_name_fp, "w") as file:
-            for line in final_pop:
-                file.write(" ".join(str(x) for x in line.tolist()) + "\n") 
-        log_text = prob_name_print + ' ' + algo + ' ' + cx + ' ' + mx
-        logger.info('%s', log_text)
+        main_template.template.selection.population_size = pop_size
     except:
-        print(prob_name_print, algo, cx, mx, 999999, -999999)
-        log_text = prob_name_print + ' ' + algo + ' ' + cx + ' ' + mx + " ERROR"
-        logger.info('%s', log_text)
+        pass
 
+    try: 
+        main_template.template.mate_selection.winner_size = pop_size
+    except:
+        pass
 
-def do(num_of_repeats: int = 1, function_evaluations: int = 10000) -> None:
-    print(cpu_count())
-    # fetch the full experiment list
-    # TODO: use the "num_of_repeats" to set the number of seeds required,
-    # might be more sensible to do using the database
-    experiment_list = get_experiments()
+    # create the problem object via Pymoo if possible
+    if prob_name[:3] == 'wfg' or prob_name[:4] == 'dtlz':
+        problem = pymoo_provider.create_pymoo_problem(pymoo_provider.PymooProblemParams(name=prob_name, n_var=n_var, n_obj=n_obj))
+    else: 
+        return
+    # TODO: handle RE problems
 
-    f_evaluations = function_evaluations
+    # construct the EA configuration and problem
+    solver, extras = algorithms.emo_constructor(emo_options=main_template, problem=problem)
+    res = solver()
 
-    # TODO: check which experiments have been completed and remove them from the list
+    # fetch the final population and the archive
+    objective_names = [obj.name for obj in problem.objectives]
+    final_pop = np.array(res.optimal_outputs[objective_names])
+    archived_solutions = np.array(extras.archive.results.optimal_outputs[objective_names])
+    #print(f"Total number of non-dominated solutions in archive: {len(extras.archive.results.optimal_outputs)}")
 
-    print(len(experiment_list))
+    # save the archived solutions and the final population to csv files identified by the run ID
+    util.write_to_csv(Path(BASE_PATH + 'archived_pops/' + str(run_id) + '.csv'), archived_solutions)
+    util.write_to_csv(Path(BASE_PATH + 'archived_final_pops/' + str(run_id) + '.csv'), final_pop)
     
-    # Create a pool of workers and run the function run_experiment for each filepath in the list
-    with Pool(processes=20) as pool:
-        pool.apply_async(start_server)
-        pool.starmap(run_experiment, experiment_list)
+    # TODO: save EA template? / load existing one with the same ea_id?
+    # TODO: problems could be stored as JSONs and loaded here instead of creating them
+
+
+def do(setup:util.ExperimentalSetup):
+    options = setup.options
+    # get the full list of experiments from the table "runs"
+    
+    sql_fetch_runs = '''SELECT * FROM runs'''
+    data = query_data(sql_fetch_runs)
+    # (run_id, ea_id, problem_id, seed, target_evals)
+
+    # find uncompleted runs by identifying if archives have been saved for them
+    uncompleted_runs = []
+    for row in data:
+        if not os.path.isfile(Path(BASE_PATH + 'archived_pops/' + str(row[0]) + '.csv')):
+            new_row = list(row)
+            new_row.append(options)
+            uncompleted_runs.append(new_row)
+
+    #print(uncompleted_runs)
+
+    # Create a pool of workers and finish the uncompleted runs
+    with Pool(processes=cpu_count()) as pool:
+        pool.starmap(run_experiment, uncompleted_runs)
         pool.terminate()
         pool.join()
+    
 
-
-if __name__ == "__main__":
-    experiment_list = get_experiments()
-    for experiment in experiment_list:
-        prob_name, n_vars, n_obj, algo, cx, mx = experiment
-        run_experiment(prob_name, n_vars, n_obj, algo, cx, mx)

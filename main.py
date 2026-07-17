@@ -84,7 +84,7 @@ if __name__ == "__main__":
         generate_database.do(setup)
 
     if "run_experiments" in pipeline:
-       run_experiments.do()
+       run_experiments.do(setup)
 
     if "approx_pf" in pipeline:
        pf_approx_from_archives.do()
