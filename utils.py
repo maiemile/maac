@@ -13,6 +13,9 @@ from pathlib import Path
 
 
 class ExperimentalSetup():
+    '''
+    Class for defining the parameters used for the experiments.
+    '''
 
     def __init__(self, options:dict, problems:list[list]):
         self.options = options
@@ -34,7 +37,7 @@ def load_param_config(param:str) -> bool | str:
     '''
 
     # TODO: this may not read True/False correctly
-    
+
     # use the config file to determine whether to load configurator models from files or training new ones
     config_parser = configparser.RawConfigParser()   
     config_path = Path("config.txt")

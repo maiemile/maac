@@ -96,9 +96,18 @@ def run_experiment(run_id:int, ea_id:int, problem_id:int, seed:int, target_evals
 
 
 def do(setup:util.ExperimentalSetup):
+    '''
+    The method for setting up the experiments.
+    The runs are fetched from the 'runs' table in the database.
+    This function automatically checks which runs have been completed and 
+    only runs uncompleted ones.
+    Multiprocessing is utilized according to the number of CPUs available.
+    '''
+
+    # Configuration options
     options = setup.options
+
     # get the full list of experiments from the table "runs"
-    
     sql_fetch_runs = '''SELECT * FROM runs'''
     data = query_data(sql_fetch_runs)
     # (run_id, ea_id, problem_id, seed, target_evals)
@@ -108,6 +117,8 @@ def do(setup:util.ExperimentalSetup):
     for row in data:
         if not os.path.isfile(Path(BASE_PATH + 'archived_pops/' + str(row[0]) + '.csv')):
             new_row = list(row)
+            # TODO: currently we just add the options here, in the future it might make sense to load 
+            # them in the run_experiment function using dedicated JSONs and problem info.
             new_row.append(options)
             uncompleted_runs.append(new_row)
 

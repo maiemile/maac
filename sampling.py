@@ -51,7 +51,7 @@ def sample_problem(problem):
         for row in fixed_sample:
             evaluated.append(prob.evaluate(row).tolist())
         evaluated = np.array(evaluated)
-    # TODO: use built-in DESDEO constructor for pymoo problems, evaluate directly, can fetch lower/upper bounds from the object earlier?
+    # TODO: use the built-in DESDEO constructor for pymoo problems, evaluate directly, can fetch lower/upper bounds from the object earlier?
     else:
         problem_pymoo = get_problem(prob_name, n_var=n_var, n_obj=n_obj)
         out = {}
@@ -94,12 +94,14 @@ def calculate_moo_features(X,y,nds_indices) -> dict:
 
     '''
 
+    # calculate how many solutions there are per non-dominated front
     samples_per_front = []
     sum_of_ranks = 0
     for i in range(len(nds_indices)):
         samples_per_front.append(len(nds_indices[i]))
         sum_of_ranks += (i+1)*len(nds_indices[i])
 
+    # calculate the proportion of solutions in each front
     prob_per_front = [value/sum(samples_per_front) for value in samples_per_front]
 
     mo_ela_dict = {}
@@ -163,8 +165,6 @@ def do(aggregators: list[str] = None):
     # loop through all problems and calculate the ELA features
     for prob in problem_instances:
         X, y = sample_problem(prob)
-
-        prob_id = prob[0]
         
         dictionaries = []
         # calculate the features one objective function at a time
@@ -225,6 +225,7 @@ def do(aggregators: list[str] = None):
             sql = generate_feature_table(feature_names)
             table_created = True
 
+        prob_id = prob[0]
         # insert a row of data
         insert_data(sql, [[int(prob_id)] + feature_values])
 
