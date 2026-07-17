@@ -2,65 +2,61 @@
 
 
 from pathlib import Path
-from scipy.spatial.distance import cdist
-
-import numpy as np
-from pathlib import Path
 import pandas as pd
+from scipy.spatial.distance import cdist
+import numpy as np
+from multiprocessing import Pool, cpu_count
 
 from desdeo.tools.non_dominated_sorting import non_dominated_merge
 import polars as pl
 import utils as util
+from generate_database import query_data
 
 ######################################################
 
 algos, cxs, mxs = util.get_all_configuration_options()
 BASE_PATH = util.load_param_config('base_path')
 
-def calc_pf_approx(prob:str, pf_approx_size:int=2000) -> None:
+def calc_pf_approx(problem_id:int, pf_approx_size:int=2000) -> None:
     '''
     Calculates the Pareto front approximation for the given problem.
     Uses non-dominated archives of algorithm configuration runs on the given problem.
     Non-dominated archives are combined and the non-dominated solutions on that set are calculated.
     Distance-based subset selection is performed to limit the size of the approximation.
+    Results are saved to a CSV file.
     '''
-    prob_name_print = prob
     pf = []
     counter = 0
 
-    # TODO: given a problem id, select all runs with the corresponding problem id
-    # then, use the run ids to get the archives
-    # using these archives, create the PF approximation
+    # get all run_ids where the current problem was run
+    sql = '''SELECT run_id FROM runs WHERE problem_id = ?'''
+    runs = query_data(sql, (problem_id,))
 
-    # loop through all configurations
-    for cx in cxs:
-        for mx in mxs:
-            for algo in algos:      
-                configuration = "-" + algo + "-" + cx + "-" + mx
+    for run in runs:
+        run_id = run[0]
+        # load the archived non-dominated solutions of the run if they exist
+        try:
+            path = Path(BASE_PATH + 'archived_pops/' + str(run_id) + '.csv')
+            pf2 = np.array(pd.read_csv(path))
+        except:
+            continue
 
-                # load the archived non-dominated solutions if they exist
-                try:
-                    path = Path(BASE_PATH + 'archived_pops/' + prob_name_print + configuration + '.txt')
-                    pf2 = np.array(pd.read_table(path, sep=" ", header=None))
-                except:
-                    continue
-                
-                # perform non-dominated merge with the current PF approximation
-                try:
-                    mask1, mask2 = non_dominated_merge(pf, pf2)
-                    df1 = pl.from_numpy(pf)
-                    df2 = pl.from_numpy(pf2)
-                    pf = pl.concat([df1.filter(mask1), df2.filter(mask2)])
-                    pf = np.array(pf)
-                    counter += 1
-                    print("NDM done", counter, prob_name_print + configuration)
-                # unless there is nothing to merge with, then set the first archive as the initial non-dominated population
-                except:
-                    pf = pf2
-                    counter += 1
-    
+        try:
+        # perform non-dominated merge with the current PF approximation
+            mask1, mask2 = non_dominated_merge(pf, pf2)
+            df1 = pl.from_numpy(pf)
+            df2 = pl.from_numpy(pf2)
+            pf = pl.concat([df1.filter(mask1), df2.filter(mask2)])
+            pf = np.array(pf)
+            counter += 1
+            print("NDM done", counter, problem_id)
+        # unless there is nothing to merge with, then set the first archive as the initial non-dominated population
+        except:
+            pf = pf2
+            counter += 1
+
     print('--------------------')
-    print(len(pf), prob_name_print)
+    print(len(pf), problem_id)
     print('--------------------')
     # if PF approximation is too large, perform distance-based subset selection
     if len(pf) > pf_approx_size:
@@ -68,38 +64,32 @@ def calc_pf_approx(prob:str, pf_approx_size:int=2000) -> None:
         for i in range(pf_approx_size-1):
             distances = cdist(pf, chosen, metric='chebyshev').min(axis=1)
             chosen.append(pf[np.argmax(distances)])
-            print(prob_name_print, i)
+            print(problem_id, i)
     # otherwise just use the full PF approximation
     else:
         chosen = pf
 
     # save the PF approximation to a file
-    path = Path(BASE_PATH + 'approx_pfs/' + prob_name_print + '.txt')
-    with open(path, "w") as file:
-        for line in chosen:
-            file.write(" ".join(str(x) for x in line.tolist()) + "\n")
+    path = Path(BASE_PATH + 'approx_pfs/' + str(problem_id) + '.csv')
+    util.write_to_csv(path, chosen)
 
 
 def setup_multiprocessing() -> None:
     '''
     A helper method for setting up multiprocessing for Pareto front approximation calculations.
     '''
-    from multiprocessing import Pool
 
-    print("starting")
+    # load all problem instances from the database
+    sql_query = '''SELECT problem_id from problems'''
+    problem_instances = query_data(sql_query)
 
-    # TODO: load problem ids from the database
-
-    problem_instances = util.get_problem_instances()
-    
-    probs = []
-    
-    # format the problems
+    # the data format must be fixed for multiprocessing
+    fixed_prob_instances = []
     for prob in problem_instances:
-        probs.append(prob[0]+'-'+str(prob[2])+'obj')
+        fixed_prob_instances.append(prob[0])
 
-    with Pool(processes=20) as pool:
-        pool.map(calc_pf_approx, probs)
+    with Pool(processes=2) as pool:
+        pool.map(calc_pf_approx, fixed_prob_instances)
         pool.terminate()
         pool.join()
 
