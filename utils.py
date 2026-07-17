@@ -12,6 +12,13 @@ import csv
 from pathlib import Path
 
 
+class ExperimentalSetup():
+
+    def __init__(self, options:dict, problems:list[list]):
+        self.options = options
+        self.problems = problems
+
+
 def write_to_csv(file:Path, data:np.array) -> None:
     '''
     Writes a CSV file at the given file using the data.
@@ -26,12 +33,15 @@ def load_param_config(param:str) -> bool | str:
     Reads the config.txt file and returns the value of requested parameter.
     '''
 
+    # TODO: this may not read True/False correctly
+    
     # use the config file to determine whether to load configurator models from files or training new ones
     config_parser = configparser.RawConfigParser()   
     config_path = Path("config.txt")
     config_parser.read(config_path)
     param_value = config_parser.get('general', param)
-
+    if param_value == 'None':
+        return ""
     return param_value
 
 

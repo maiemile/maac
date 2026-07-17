@@ -119,7 +119,10 @@ def generate_ea_table(options:dict) -> None:
     for key,value in options.items():
         keys.append(key)
         data_type, values = value
-        option_lists.append(values)
+        key_list = []
+        for k,_ in values.items():
+            key_list.append(k)
+        option_lists.append(key_list)
 
         # Check integrity of the key and the data type
         check_key(key)
@@ -183,7 +186,13 @@ def generate_run_table(n_of_repeats:list[int], target_evals:list[int]) -> None:
 
     if len(n_of_repeats) != len(target_evals):
         raise Exception('The length of n_of_repeats and target_evals must be equal')
-    # TODO: exception if n_of_repeats < 1 or target_evals < 1
+    for i in range(len(n_of_repeats)):
+        if n_of_repeats[i] < 1:
+            raise Exception('The number of repeats must be a positive integer value.')
+    for i in range(len(target_evals)):
+        if target_evals[i] < 1:
+            raise Exception('The number of target evaluations must be a positive integer value.')
+
     # TODO: add indicator columns
     table_sql = '''CREATE TABLE IF NOT EXISTS runs(
             run_id INTEGER PRIMARY KEY AUTOINCREMENT, 
@@ -221,21 +230,18 @@ def generate_run_table(n_of_repeats:list[int], target_evals:list[int]) -> None:
                 VALUES(?,?,?,?)'''
             insert_data(sql_statement, all_combinations)
 
-    
-# TODO: this dictionary should be given by the user/read from json files
-#options = {"selection": ["TEXT", ["IBEA", "NSGA-III", "RVEA"]], "crossover": ["TEXT", ["SBX", "SAX"]], "mutation": ["TEXT", ["BPM", "NUM"]]}
-options = {"selection": ["TEXT", ["IBEA","NSGA-III"]], "crossover": ["TEXT", ["SBX","SAX"]], "mutation": ["TEXT", ["BPM","NUM"]]}
-problems = [
-        ["dtlz1", 3, 7],#["dtlz2", 3, 10],["dtlz3", 3, 10],["dtlz4", 3, 10],["dtlz5", 3, 10],["dtlz6", 3, 10],["dtlz7", 3, 10],
-        ["wfg1", 3, 10]
-        ]
 
-
-def do(n_of_repeats:list[int]=[1], target_evals:list[int]=[10000]) -> None:
+def do(setup: util.ExperimentalSetup, n_of_repeats:list[int]=[1], target_evals:list[int]=[10000]) -> None:
     '''
     Main function for generating and populating 3 SQL tables in a database:
     1) EA table 2) problem table 3) run table
     '''
+
+    # load the configuration options and problems from the parameters
+    options = setup.options
+    problems = setup.problems
+
+    # generate the tables and fill them with data
     generate_ea_table(options)
     generate_problem_table(problems)
     generate_run_table(n_of_repeats=n_of_repeats, target_evals=target_evals)
