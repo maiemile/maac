@@ -25,7 +25,7 @@ if __name__ == "__main__":
     num_of_evaluations = 1000
 
     # TODO: need a better implementation for this
-    pipeline = ["approx_pf"]#["generate_database", "run_experiments", "calculate_indicators"]
+    pipeline = ["run_experiments"]#["approx_pf", "generate_database", "run_experiments", "calculate_indicators"]
     #pipeline = ["classification", "regression"]
 
     # Make sure the folders where the figures are saved exist
@@ -81,7 +81,7 @@ if __name__ == "__main__":
     # TODO: add params
 
     if "generate_database" in pipeline:
-        generate_database.do(setup)
+        generate_database.do(setup, n_of_repeats=[1], target_evals=[1000])
 
     if "run_experiments" in pipeline:
        run_experiments.do(setup)

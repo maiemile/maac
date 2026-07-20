@@ -107,27 +107,36 @@ def do(setup:util.ExperimentalSetup):
     # Configuration options
     options = setup.options
 
-    # get the full list of experiments from the table "runs"
-    sql_fetch_runs = '''SELECT * FROM runs'''
-    data = query_data(sql_fetch_runs)
-    # (run_id, ea_id, problem_id, seed, target_evals)
+    sql_get_max_seed = '''SELECT max(seed) from runs'''
+    max_seed = query_data(sql_get_max_seed)[0]
+    
+    # loop through the seed values:
+    # we prioritize finishing the lower seed values before 
+    for i in range(max_seed):
+        seed = i+1
 
-    # find uncompleted runs by identifying if archives have been saved for them
-    uncompleted_runs = []
-    for row in data:
-        if not os.path.isfile(Path(BASE_PATH + 'archived_pops/' + str(row[0]) + '.csv')):
-            new_row = list(row)
-            # TODO: currently we just add the options here, in the future it might make sense to load 
-            # them in the run_experiment function using dedicated JSONs and problem info.
-            new_row.append(options)
-            uncompleted_runs.append(new_row)
+        # get the full list of experiments from the table "runs"
+        sql_fetch_runs = '''SELECT * FROM runs WHERE seed = ?'''
+        data = query_data(sql_fetch_runs, (seed,))
+        # (run_id, ea_id, problem_id, seed, target_evals)
 
-    #print(uncompleted_runs)
+        # find uncompleted runs by identifying if archives have been saved for them
+        uncompleted_runs = []
+        for row in data:
+            if not os.path.isfile(Path(BASE_PATH + 'archived_pops/' + str(row[0]) + '.csv')):
+                new_row = list(row)
+                # TODO: currently we just add the options here, in the future it might make sense to load 
+                # them in the run_experiment function using dedicated JSONs and problem info.
+                new_row.append(options)
+                uncompleted_runs.append(new_row)
 
-    # Create a pool of workers and finish the uncompleted runs
-    with Pool(processes=cpu_count()) as pool:
-        pool.starmap(run_experiment, uncompleted_runs)
-        pool.terminate()
-        pool.join()
+        if len(uncompleted_runs) == 0:
+            continue
+
+        # Create a pool of workers and finish the uncompleted runs
+        with Pool(processes=cpu_count()) as pool:
+            pool.starmap(run_experiment, uncompleted_runs)
+            pool.terminate()
+            pool.join()
     
 
