@@ -12,6 +12,33 @@ pattern = "^[A-Za-z0-9_-]*$"
 # Load the filename of the database
 database = util.load_param_config('database_file')
 
+def get_average_indicator(indicator:str="igd") -> list[tuple]:
+    '''
+    Returns a list of tuples with the average indicator value for each configuration and problem pair across all runs.
+    '''
+    sql = f'''SELECT p.problem_id, e.ea_id, AVG(r.{indicator}) FROM runs r, problems p, eas e
+    WHERE p.problem_id = r.problem_id
+    AND r.ea_id = e.ea_id GROUP BY p.problem_id, e.ea_id'''
+
+    res = query_data(sql)
+    return res
+
+
+def get_best_config_by_problem(indicator:str="igd") -> list[tuple]:
+    '''
+    Returns a tuple with the best EA configuration for the given problem as measured by the average value of the indicator.
+    '''
+    sql = f'''SELECT problem, EA, MIN(average_igd) 
+    FROM (SELECT AVG(r.{indicator}) AS average_igd, p.problem_id AS problem, e.ea_id AS EA
+    FROM runs r, problems p, eas e 
+    WHERE p.problem_id = r.problem_id
+    AND r.ea_id = e.ea_id GROUP BY p.name, e.ea_id)
+    GROUP BY problem'''
+
+    res = query_data(sql)
+    return res
+
+
 def check_key(key:str) -> None:
     '''
     Checks the integrity of the given string. If it contains characters outside of the defined pattern,

@@ -51,3 +51,7 @@ def do() -> None:
 
 if __name__ == "__main__":
     do()
+    import generate_database as gd
+
+    print(gd.get_average_indicator("igd"))
+    print(gd.get_best_config_by_problem("igd"))

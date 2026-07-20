@@ -24,7 +24,6 @@ def calc_ind_val_problem(run_id:int, problem_id:int, indicators:list[str], ind_v
         pf_approx = np.array(pd.read_csv(path))
     except:
         # PF approximation doesn't exist, skip
-        print("PF approx not found")
         return
 
     # ideal and nadir vectors
@@ -70,8 +69,6 @@ def calc_ind_val_problem(run_id:int, problem_id:int, indicators:list[str], ind_v
     # add run id to the SQL
     values.append(run_id)
     update_data(sql, values)
-
-    return
 
 
 def do(indicators:list[str]) -> None:
