@@ -25,8 +25,8 @@ def calc_pf_approx(problem_id:int, pf_approx_size:int=2000) -> None:
     Distance-based subset selection is performed to limit the size of the approximation.
     Results are saved to a CSV file.
     '''
+    
     pf = []
-    counter = 0
 
     # get all run_ids where the current problem was run
     sql = '''SELECT run_id FROM runs WHERE problem_id = ?'''
@@ -48,12 +48,9 @@ def calc_pf_approx(problem_id:int, pf_approx_size:int=2000) -> None:
             df2 = pl.from_numpy(pf2)
             pf = pl.concat([df1.filter(mask1), df2.filter(mask2)])
             pf = np.array(pf)
-            counter += 1
-            print("NDM done", counter, problem_id)
         # unless there is nothing to merge with, then set the first archive as the initial non-dominated population
         except:
             pf = pf2
-            counter += 1
 
     print('--------------------')
     print(len(pf), problem_id)

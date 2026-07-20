@@ -4,130 +4,103 @@ from desdeo.tools.indicators_unary import hv, igd_plus_indicator, distance_indic
 from pathlib import Path
 import numpy as np
 import pandas as pd
-from multiprocessing import Pool
+from multiprocessing import Pool, cpu_count
 import utils as util
+from generate_database import query_data, update_data
+import os
 
-# all the problems instances
-problem_instances = util.get_problem_instances()
-algos, cxs, mxs = util.get_all_configuration_options()
 BASE_PATH = util.load_param_config('base_path')
 
-def get_experiments() -> list[list]:
-    '''
-    Fetches the experiments consisting of a problem and a configuration as a list of lists.
-    '''
 
-    # Enumerate all possible problem instance + config permutations
-    prob_and_config_permutations = [prob + [a, cx, mx] for prob in problem_instances for a in algos for cx in cxs for mx in mxs]
-    
-    return prob_and_config_permutations
-
-
-def calculate_indicator_values(config:str, ideal_vector, nadir_vector, pf_approx) -> None:
+def calc_ind_val_problem(run_id:int, problem_id:int, indicators:list[str], ind_vals:list[float]) -> None:
     '''
-    Calculates the performance indicator values of the given configuration on a problem.
+    Calculates the indicator values of the given run. Only performs calculations if the indicator value is None.
+    Requires the PF approximation to exist for the given problem and the archive of the given run.
+    Updates the calculated indicator values to the database.
     '''
 
-    # TODO: given the run_id, get the archive, PF approx (+ ideal/nadir)
-    # calculate the indicators and save them to 'runs' using the run_id
-
-    log_path = Path(BASE_PATH + 'igd_values_log.txt')
-    
-    # try to fetch the archive, in case it doesn't exist, log an error
     try:
-        file_name = Path(BASE_PATH + 'archived_pops/' + config + '.txt')
-        archive = np.array(pd.read_table(file_name, sep=" ", header=None))
+        path = Path(BASE_PATH + 'approx_pfs/' + str(problem_id) + '.csv')
+        pf_approx = np.array(pd.read_csv(path))
     except:
-        log_text = config + " ERROR"
-        prog_log = open(log_path, "a")
-        prog_log.write(config + " ERROR" + "\n")
-        prog_log.close()
+        # PF approximation doesn't exist, skip
+        print("PF approx not found")
+        return
+
+    # ideal and nadir vectors
+    ideal_vector = np.min(pf_approx, axis=0)
+    nadir_vector = np.max(pf_approx, axis=0)
+
+    # normalize the PF approximation
+    normalized_pf_approx = (pf_approx-ideal_vector) / (nadir_vector-ideal_vector)
+
+    # it was already checked that this file exists, but for improved integrity, we use try catch
+    try:
+        # fetch the archive if it exists
+        path = Path(BASE_PATH + 'archived_pops/' + str(run_id) + '.csv')
+        archive = np.array(pd.read_csv(path))
+    except:
         return
 
     # archive normalization
     normalized_archive = (archive-ideal_vector) / (nadir_vector-ideal_vector)
-    print("archive normalized", config, flush=True)
 
-    # normalize the PF approximation too
-    normalized_pf_approx = (pf_approx-ideal_vector) / (nadir_vector-ideal_vector)
+    # save the indicator values to a dictionary
+    # only calculate the values if they have not been calculated already
+    ind_res = {}
+    for i in range(len(indicators)):
+        indicator, ind_value = indicators[i], ind_vals[i]
+        if ind_value != None:
+            continue
+        if indicator == "igd":
+            ind_val = distance_indicators(normalized_archive, normalized_pf_approx).igd
+        if indicator == "igd_plus":
+            ind_val = igd_plus_indicator(normalized_archive, normalized_pf_approx).igd_plus
 
-    # TOO SLOW FOR PROBLEMS WITH MANY OBJECTIVE FUNCTIONS
-    #hypervolume_metric = hv(normalized_archive, 1.001)
-    #print("hv calculated", config, flush=True)
+        ind_res[indicator] = ind_val
 
-    # calculate IGD and IGD+ indicators
-    regular_igd = distance_indicators(normalized_archive, normalized_pf_approx)
-    igd_plus = igd_plus_indicator(normalized_archive, normalized_pf_approx)
-    print("igd calculated", config, flush=True)
+    # create the update statement
+    sql = f'''UPDATE runs SET '''
+    values = []
+    for k,v in ind_res.items():
+        sql += f'''{k} = ?,'''
+        values.append(v)
+    sql = sql[:-1] + f'''\nWHERE run_id = ?;'''
 
-    log_text = config + ' ' + str(regular_igd.igd) + ' ' + str(igd_plus.igd_plus)
-
-    prog_log = open(log_path, "a")
-    prog_log.write(log_text + "\n")
-    prog_log.close()
+    # add run id to the SQL
+    values.append(run_id)
+    update_data(sql, values)
 
     return
 
 
-def calc_ind_val_problem(prob_name:str, n_vars:int, n_objs:int, algo:str, cx:str, mx:str) -> None:
-    '''
-    Helper function for fetching the Pareto front approximation as well as the ideal and nadir vectors 
-    of a given problem. Calls calculate_indicator_values with the given configuration and problem.
-    '''
-
-    # TODO: given the problem_id, get the corresponding PF approx file
-
-    # create the unique problem name plus configuration
-    prob_name_print = prob_name + '-' + str(n_objs) + 'obj'
-    file_name = Path(BASE_PATH + 'approx_pfs/' + prob_name_print + '.txt')
-    pf_approx = np.array(pd.read_table(file_name, sep=" ", header=None))
-    print("PF approx fetched", prob_name_print, flush=True)
-    ideal_vector = np.min(pf_approx, axis=0)
-    nadir_vector = np.max(pf_approx, axis=0)
-    
-    configuration = prob_name_print + "-" + algo + "-" + cx + "-" + mx
-    calculate_indicator_values(configuration, ideal_vector, nadir_vector, pf_approx)
-    
-    return
-
-
-def do() -> None:
+def do(indicators:list[str]) -> None:
     # TODO:
     # Get all run ids from the 'runs' table
     # List the runs that have corresponding archives and calculate indicators on them,
     # but only if the run_id is missing the indicator values in the table
 
-    experiment_list = get_experiments()
-    not_completed = []
-    completed_experiments = []
+    sql_query = '''SELECT run_id, problem_id'''
 
-    # load completed experiments if they exist
-    try:
-        with open(BASE_PATH + 'igd_values_log.txt', 'r') as file:
-            for line in file:
-                completed_experiments.append(line)
-    except:
-        pass
+    # add the indicator names to the query
+    for indicator in indicators:
+        sql_query += ', ' + indicator
 
-    # find experiments that have already been completed
-    for experiment in experiment_list:
-        completed = False
-        prob_name_print = experiment[0] + "-" + str(experiment[2]) + "obj"
-        for line in completed_experiments:     
-            split_line = line.split() 
-            config = split_line[0].split('-')
-            if (config[0]+'-'+config[1] == prob_name_print and config[2] == experiment[3] and 
-                config[3] == experiment[4] and config[4] == experiment[5]):
-                completed = True
-                break
-        if completed == False:
-            not_completed.append(experiment)
+    # get the run and problem ids, indicator values
+    sql_query += ''' FROM runs'''
+    data = query_data(sql_query)
 
-    print(len(experiment_list))
-    print(len(not_completed))
+    # find completed runs by identifying if archives have been saved for them
+    completed_runs = []
+    for row in data:
+        if os.path.isfile(Path(BASE_PATH + 'archived_pops/' + str(row[0]) + '.csv')):
+            new_row = list(row)
 
-    print("started")
-    with Pool(processes=20) as pool:
-        pool.starmap(calc_ind_val_problem, not_completed)
+            completed_runs.append(new_row[:2] + [indicators] + [new_row[2:]])
+
+    print(completed_runs)
+
+    with Pool(processes=cpu_count()) as pool:
+        pool.starmap(calc_ind_val_problem, completed_runs)
         pool.terminate()
         pool.join()

@@ -99,6 +99,29 @@ def insert_data(sql_statement:str, data:list) -> None:
         print("Failed to create data:", e)
 
 
+# TODO: maybe this should be combined with the above
+def update_data(sql:str, data:list) -> None:
+    '''
+    Updates the data into a table using the provided SQL statement.
+    '''
+    try:
+        with sqlite3.connect(database) as conn:
+            # create a cursor
+            cursor = conn.cursor()
+
+            try:
+                cursor.execute(sql, data)
+            except sqlite3.IntegrityError as e:
+                print(e)
+
+            # commit the changes
+            conn.commit()
+
+            print("Data updated.")
+    except sqlite3.OperationalError as e:
+        print("Failed to update data:", e)
+
+
 def generate_ea_table(options:dict) -> None:
     '''
     Generates an SQL table of all possible configuration combinations according to the configuration options
@@ -200,6 +223,8 @@ def generate_run_table(n_of_repeats:list[int], target_evals:list[int]) -> None:
             problem_id INTEGER NOT NULL,
             seed INTEGER NOT NULL,
             target_evals INTEGER NOT NULL,
+            igd REAL,
+            igd_plus REAL,
             unique (ea_id, problem_id, seed, target_evals),
             FOREIGN KEY(ea_id) REFERENCES eas(ea_id),
             FOREIGN KEY(problem_id) REFERENCES problems(problem_id)

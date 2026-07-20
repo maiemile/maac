@@ -108,7 +108,7 @@ def do(setup:util.ExperimentalSetup):
     options = setup.options
 
     # get the full list of experiments from the table "runs"
-    sql_fetch_runs = '''SELECT * FROM runs'''
+    sql_fetch_runs = '''SELECT run_id, ea_id, problem_id, seed, target_evals FROM runs'''
     data = query_data(sql_fetch_runs)
     # (run_id, ea_id, problem_id, seed, target_evals)
 

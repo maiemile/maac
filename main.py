@@ -25,8 +25,10 @@ if __name__ == "__main__":
     num_of_evaluations = 1000
 
     # TODO: need a better implementation for this
-    pipeline = ["run_experiments"]#["approx_pf", "generate_database", "run_experiments", "calculate_indicators"]
+    pipeline = ["calculate_indicators"]#["approx_pf", "generate_database", "run_experiments", "calculate_indicators"]
     #pipeline = ["classification", "regression"]
+
+    indicators = ["igd"]#, "igd_plus"]
 
     # Make sure the folders where the figures are saved exist
     # if not, create the corresponding folders
@@ -81,7 +83,7 @@ if __name__ == "__main__":
     # TODO: add params
 
     if "generate_database" in pipeline:
-        generate_database.do(setup, n_of_repeats=[1], target_evals=[1000])
+        generate_database.do(setup, n_of_repeats=[2], target_evals=[1000])
 
     if "run_experiments" in pipeline:
        run_experiments.do(setup)
@@ -90,7 +92,7 @@ if __name__ == "__main__":
        pf_approx_from_archives.do()
 
     if "calculate_indicators" in pipeline:
-       calc_indicator_values.do()
+       calc_indicator_values.do(indicators)
 
     if "best_indicator" in pipeline:
         best_igd.do()
