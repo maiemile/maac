@@ -75,10 +75,11 @@ def calc_ind_val_problem(run_id:int, problem_id:int, indicators:list[str], ind_v
 
 
 def do(indicators:list[str]) -> None:
-    # TODO:
-    # Get all run ids from the 'runs' table
-    # List the runs that have corresponding archives and calculate indicators on them,
-    # but only if the run_id is missing the indicator values in the table
+    '''
+    Function for setting up the indicator calculations with multiprocessing.
+    Finds all runs and identified which ones are missing indicator values according to the given indicator list.
+    Can only calculate indicator values for runs which have a saved archive and a corresponding PF approximation.
+    '''
 
     sql_query = '''SELECT run_id, problem_id'''
 
@@ -90,13 +91,16 @@ def do(indicators:list[str]) -> None:
     sql_query += ''' FROM runs'''
     data = query_data(sql_query)
 
-    # find completed runs by identifying if archives have been saved for them
+    # find completed runs with missing indicator values
+    # by identifying if archives have been saved for them
     completed_runs = []
     for row in data:
         if os.path.isfile(Path(BASE_PATH + 'archived_pops/' + str(row[0]) + '.csv')):
             new_row = list(row)
 
-            completed_runs.append(new_row[:2] + [indicators] + [new_row[2:]])
+            # if there is at least one missing indicator value, add the row to the list
+            if None in new_row[2:]:
+                completed_runs.append(new_row[:2] + [indicators] + [new_row[2:]])
 
     print(completed_runs)
 
