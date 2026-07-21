@@ -2,7 +2,6 @@
 
 # This is the main file
 
-from pathlib import Path
 import os
 import classification_models
 import regressor_models
@@ -26,14 +25,15 @@ if __name__ == "__main__":
     num_of_evaluations = 1000
 
     # TODO: need a better implementation for this
-    pipeline = ["generate_database", "run_experiments"]#["approx_pf", "generate_database", "run_experiments", "calculate_indicators"]
+    pipeline = [] #["generate_database", "run_experiments"]#["approx_pf", "generate_database", "run_experiments", "calculate_indicators"]
     #pipeline = ["classification", "regression"]
 
     indicators = ["igd"]#, "igd_plus"]
 
     # Make sure the folders where the figures are saved exist
     # if not, create the corresponding folders
-    paths = ["archived_pops", "archived_final_pops", "approx_pfs", Path("figures\\confusion_matrices"), Path("figures\\perf_prof")]
+    paths = ["archived_pops", "archived_final_pops", "approx_pfs", os.path.join("figures", "confusion_matrices"), 
+             os.path.join("figures", "perf_prof")]
     for path in paths:
         if not os.path.exists(path):
             os.makedirs(path)
