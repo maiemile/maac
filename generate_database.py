@@ -243,7 +243,7 @@ def generate_run_table(n_of_repeats:list[int], target_evals:list[int]) -> None:
         if target_evals[i] < 1:
             raise Exception('The number of target evaluations must be a positive integer value.')
 
-    # TODO: add indicator columns
+    # TODO: add indicator columns via user input
     table_sql = '''CREATE TABLE IF NOT EXISTS runs(
             run_id INTEGER PRIMARY KEY AUTOINCREMENT, 
             ea_id INTEGER NOT NULL,
