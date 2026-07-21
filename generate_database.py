@@ -78,28 +78,6 @@ def query_data(sql_statement:str, qmark:tuple=None) -> list:
     return data
 
 
-def create_table(sql_statement:str) -> None:
-    ''' 
-    Creates an SQL table based on the provided SQL statement.
-    '''
-
-    # create the specified table
-    try:
-        with sqlite3.connect(database) as conn:
-            # create a cursor
-            cursor = conn.cursor()
-
-            # execute statement
-            cursor.execute(sql_statement)
-
-            # commit the changes
-            conn.commit()
-
-            print("Tables created successfully.")
-    except sqlite3.OperationalError as e:
-        print("Failed to create tables:", e)
-
-
 def insert_data(sql_statement:str, data:list) -> None:
     '''
     Inserts the data into a table using the provided SQL statement.
@@ -127,7 +105,6 @@ def insert_data(sql_statement:str, data:list) -> None:
         print("Failed to create data:", e)
 
 
-# TODO: this could be combined with create_table...
 def execute_sql(sql:str) -> None:
     '''
     Executes any SQL statement which doesn't require extra input 
@@ -145,9 +122,9 @@ def execute_sql(sql:str) -> None:
 
             # commit the changes
             conn.commit()
-            print("Column added.")
+            print("SQL successful.")
     except sqlite3.OperationalError as e:
-        print("Failed to add column:", e)
+        print("Failed to execute SQL:", e)
 
 
 def generate_ea_table(options:dict) -> None:
@@ -186,7 +163,7 @@ def generate_ea_table(options:dict) -> None:
     unique = unique[:-2]+""")"""
     sql_statement += unique + """\n);"""
 
-    create_table(sql_statement)
+    execute_sql(sql_statement)
     
     # iterate the list of options to get all possible combinations
     all_combinations = list(itertools.product(*option_lists))
@@ -219,7 +196,7 @@ def generate_problem_table(problems:list[str,int,int]) -> None:
             unique (name, obj, var)
             );'''
     
-    create_table(table_sql)
+    execute_sql(table_sql)
 
     # create the insert statement
     sql = f'''INSERT INTO problems(name,obj,var)
@@ -255,7 +232,7 @@ def generate_run_table(n_of_repeats:list[int], target_evals:list[int], indicator
             FOREIGN KEY(problem_id) REFERENCES problems(problem_id)
             );'''
     
-    create_table(table_sql)
+    execute_sql(table_sql)
 
     # add a column for each indicator given by user (if they don't already exist)
     for indicator in indicators:
@@ -300,7 +277,7 @@ def generate_feature_table(feature_names:list[str]) -> str:
         sql_statement += f",\n{feat_name} REAL"
     sql_statement += ",\nFOREIGN KEY(problem_id) REFERENCES problems(problem_id));"
     # create the features table
-    create_table(sql_statement)
+    execute_sql(sql_statement)
 
     # create the insert statement
     sql = f'''INSERT INTO features(problem_id,'''
