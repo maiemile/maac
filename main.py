@@ -2,6 +2,7 @@
 
 # This is the main file
 
+from pathlib import Path
 import os
 import classification_models
 import regressor_models
@@ -32,7 +33,7 @@ if __name__ == "__main__":
 
     # Make sure the folders where the figures are saved exist
     # if not, create the corresponding folders
-    paths = ["archived_pops", "archived_final_pops", "approx_pfs", "figures\\confusion_matrices", "figures\\perf_prof"]
+    paths = ["archived_pops", "archived_final_pops", "approx_pfs", Path("figures\\confusion_matrices"), Path("figures\\perf_prof")]
     for path in paths:
         if not os.path.exists(path):
             os.makedirs(path)

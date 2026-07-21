@@ -50,7 +50,7 @@ def do() -> None:
 
 
 if __name__ == "__main__":
-    do()
+    #do()
     import generate_database as gd
 
     print(gd.get_average_indicator("igd"))
