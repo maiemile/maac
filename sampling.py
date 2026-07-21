@@ -13,7 +13,7 @@ from generate_database import query_data, generate_feature_table, insert_data
 re_problems = util.get_re_problems()
 
 
-def sample_problem(problem):
+def sample_problem(problem:tuple[int,str,int,int]):
     '''
     Creates a sample of the given multi-objective optimization problem.
     Uses latin hypercube sampling to sample in the decision space
@@ -60,7 +60,7 @@ def sample_problem(problem):
     return fixed_sample, evaluated
 
 
-def calculate_ela_features(X,y) -> dict:
+def calculate_ela_features(X:np.array, y:np.array) -> dict:
     '''
     Calculates 7 clasical single-objective exploratory landscape analysis feature sets from pflacco.
     '''
@@ -83,7 +83,7 @@ def calculate_ela_features(X,y) -> dict:
     return ela_dict
 
 
-def calculate_moo_features(X,y,nds_indices) -> dict:
+def calculate_moo_features(X:np.array, y:np.array, nds_indices:list[list[int]]) -> dict:
     '''
     Calculates some multi-objective specific exploratory landscape analysis features proposed by the following paper:
 
@@ -91,7 +91,6 @@ def calculate_moo_features(X,y,nds_indices) -> dict:
     Landscape features and automated algorithm selection for multi-objective interpolated continuous optimisation problems. 
     In Proceedings of the Genetic and Evolutionary Computation Conference (GECCO '21). Association for Computing Machinery, 
     New York, NY, USA, 421–429. https://doi.org/10.1145/3449639.3459353
-
     '''
 
     # calculate how many solutions there are per non-dominated front
@@ -143,7 +142,7 @@ def calculate_moo_features(X,y,nds_indices) -> dict:
     return mo_ela_dict
 
 
-def do(aggregators: list[str] = None):
+def do(aggregators:list[str] = None):
     '''
     The default function for running the sampling procedures.
 
@@ -213,6 +212,7 @@ def do(aggregators: list[str] = None):
         feature_values = []
         for i in range(len(dicts)):
             for k, v in dicts[i].items():
+                # runtime isn't a feature
                 if 'runtime' in k:
                     continue
                 feature_name = k + '_' + aggregators[i]
