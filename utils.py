@@ -131,21 +131,6 @@ def get_all_configuration_options() -> list[list]:
     return algos, cxs, mxs
 
 
-def get_all_configurations() -> list[str]:
-    '''
-    Returns a list of all configurations used in the following string format "algorithm-crossover-mutation"
-    
-    :return: All configurations in the following format: "algorithm-crossover-mutation"
-    :rtype: list[str]
-    '''
-    algos, cxs, mxs = get_all_configuration_options()
-
-    # rvea-NUM is ignored due to too many errors
-    configs = [a+"-"+cx+"-"+mx for a in algos for cx in cxs for mx in mxs if a != 'rvea' or mx != 'NUM']
-
-    return configs
-
-
 # TODO: check the folder indicator_data, and find all suffixes
 def get_default_aggregators() -> list[str]:
     '''
