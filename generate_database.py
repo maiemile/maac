@@ -103,6 +103,7 @@ def create_table(sql_statement:str) -> None:
 def insert_data(sql_statement:str, data:list) -> None:
     '''
     Inserts the data into a table using the provided SQL statement.
+    Also works for updating data.
     '''
     # add data to the table
     try:
@@ -126,10 +127,11 @@ def insert_data(sql_statement:str, data:list) -> None:
         print("Failed to create data:", e)
 
 
-# TODO: maybe this should be combined with the above
-def update_data(sql:str, data:list) -> None:
+# TODO: this could be combined with create_table...
+def execute_sql(sql:str) -> None:
     '''
-    Updates the data into a table using the provided SQL statement.
+    Executes any SQL statement which doesn't require extra input 
+    and doesn't receive any output.
     '''
     try:
         with sqlite3.connect(database) as conn:
@@ -137,16 +139,15 @@ def update_data(sql:str, data:list) -> None:
             cursor = conn.cursor()
 
             try:
-                cursor.execute(sql, data)
+                cursor.execute(sql)
             except sqlite3.IntegrityError as e:
                 print(e)
 
             # commit the changes
             conn.commit()
-
-            print("Data updated.")
+            print("Column added.")
     except sqlite3.OperationalError as e:
-        print("Failed to update data:", e)
+        print("Failed to add column:", e)
 
 
 def generate_ea_table(options:dict) -> None:
@@ -227,7 +228,7 @@ def generate_problem_table(problems:list[str,int,int]) -> None:
     insert_data(sql, problems)
 
 
-def generate_run_table(n_of_repeats:list[int], target_evals:list[int]) -> None:
+def generate_run_table(n_of_repeats:list[int], target_evals:list[int], indicators:list[str]) -> None:
     '''
     Generates an SQL table of all algorithm configuration runs.
     A separate row is created for each configuration + problem pair. 
@@ -243,21 +244,23 @@ def generate_run_table(n_of_repeats:list[int], target_evals:list[int]) -> None:
         if target_evals[i] < 1:
             raise Exception('The number of target evaluations must be a positive integer value.')
 
-    # TODO: add indicator columns via user input
     table_sql = '''CREATE TABLE IF NOT EXISTS runs(
             run_id INTEGER PRIMARY KEY AUTOINCREMENT, 
             ea_id INTEGER NOT NULL,
             problem_id INTEGER NOT NULL,
             seed INTEGER NOT NULL,
             target_evals INTEGER NOT NULL,
-            igd REAL,
-            igd_plus REAL,
             unique (ea_id, problem_id, seed, target_evals),
             FOREIGN KEY(ea_id) REFERENCES eas(ea_id),
             FOREIGN KEY(problem_id) REFERENCES problems(problem_id)
             );'''
     
     create_table(table_sql)
+
+    # add a column for each indicator given by user (if they don't already exist)
+    for indicator in indicators:
+        sql = f'''ALTER TABLE runs ADD COLUMN {indicator} REAL;'''
+        execute_sql(sql)
 
     # create the insert statement
     sql_ea = f'''SELECT ea_id FROM eas'''
@@ -311,7 +314,7 @@ def generate_feature_table(feature_names:list[str]) -> str:
     return sql
 
 
-def do(setup: util.ExperimentalSetup, n_of_repeats:list[int]=[1], target_evals:list[int]=[10000]) -> None:
+def do(setup: util.ExperimentalSetup, indicators:list[str], n_of_repeats:list[int]=[1], target_evals:list[int]=[10000]) -> None:
     '''
     Main function for generating and populating 3 SQL tables in a database:
     1) EA table 2) problem table 3) run table
@@ -324,7 +327,7 @@ def do(setup: util.ExperimentalSetup, n_of_repeats:list[int]=[1], target_evals:l
     # generate the tables and fill them with data
     generate_ea_table(options)
     generate_problem_table(problems)
-    generate_run_table(n_of_repeats=n_of_repeats, target_evals=target_evals)
+    generate_run_table(n_of_repeats=n_of_repeats, target_evals=target_evals, indicators=indicators)
 
 
 if __name__ == "__main__":

@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 from multiprocessing import Pool, cpu_count
 import utils as util
-from generate_database import query_data, update_data
+from generate_database import query_data, insert_data
 import os
 
 BASE_PATH = util.load_param_config('base_path')
@@ -68,7 +68,7 @@ def calc_ind_val_problem(run_id:int, problem_id:int, indicators:list[str], ind_v
 
     # add run id to the SQL
     values.append(run_id)
-    update_data(sql, values)
+    insert_data(sql, [values])
 
 
 def do(indicators:list[str]) -> None:
@@ -99,7 +99,7 @@ def do(indicators:list[str]) -> None:
             if None in new_row[2:]:
                 completed_runs.append(new_row[:2] + [indicators] + [new_row[2:]])
 
-    print(completed_runs)
+    #print(completed_runs)
 
     with Pool(processes=cpu_count()) as pool:
         pool.starmap(calc_ind_val_problem, completed_runs)
