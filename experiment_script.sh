@@ -6,4 +6,4 @@
 #SBATCH --mem-per-cpu=2G            # Minimum memory required per usable allocated CPU.  Default units are megabytes.
 #SBATCH --partition=small            # Which queue to use. Defines maximum time, memory, tasks, nodes and local storage for job
 
-srun .venv/bin/python /projappl/XXXXXX/maac/run_experiments.py
+srun /projappl/XXXXXX/DESDEO/DESDEO/.venv/bin/python run_experiments.py
