@@ -36,9 +36,7 @@ def load_param_config(param:str) -> bool | str:
     Reads the config.txt file and returns the value of requested parameter.
     '''
 
-    # TODO: this may not read True/False correctly
-
-    # use the config file to determine whether to load configurator models from files or training new ones
+    # use the config file to load the desired parameter value
     config_parser = configparser.RawConfigParser()   
     config_path = Path("config.txt")
     config_parser.read(config_path)

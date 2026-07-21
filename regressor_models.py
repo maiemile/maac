@@ -27,7 +27,7 @@ algos, crossovers, mutations = util.get_all_configuration_options()
 cols_to_drop = ['problem', 'igd_plus', 'ic.eps_ratio_MIN', 'ic.eps_ratio_AVG', 'ic.eps_ratio_SD']
 
 # Fetch the information on whether to load pre-existing models (True) or train new ones (False)
-load_models = util.load_param_config('load_models')
+load_models = bool(util.load_param_config('load_models'))
 
 
 def calculate_r2_scores(feat_sets:list[str], response_variable:str):

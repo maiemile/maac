@@ -28,7 +28,7 @@ problem_instances = util.get_problem_instances()
 test_problems = util.get_test_problems()
 
 # Fetch the information on whether to load pre-existing models (True) or train new ones (False)
-load_models = util.load_param_config('load_models')
+load_models = bool(util.load_param_config('load_models'))
 
 
 def load_response_variables(problems_to_ignore: list[str]) -> list[list[str]]:
