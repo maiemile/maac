@@ -10,6 +10,9 @@ import perfprof
 import reproblem as reprob
 import csv
 from pathlib import Path
+from desdeo.problem.testproblems import re_problem as re
+from desdeo.problem import Problem
+from desdeo.problem.external import pymoo_provider
 
 
 class ExperimentalSetup():
@@ -103,10 +106,26 @@ def get_problem_instances() -> list[list]:
 
 def get_re_problems() -> dict:
     '''
-    Returns all RE problems in a dictionary. Each value is the function for evaluating a solution on the problem.
+    Returns all RE problems in a dictionary. Each value is the function name of the problem in DESDEO.
     '''
-    return {"re31": reprob.RE31, "re32": reprob.RE32, "re33": reprob.RE33, "re34": reprob.RE34, "re37": reprob.RE37,
-               "re41": reprob.RE41, "re42": reprob.RE42, "re61": reprob.RE61, "re91": reprob.RE91}
+    # TODO: add the remaining RE problem implementations
+    return {"re34": re.re34, "re37": re.re37, "re41": re.re41, "re61": re.re61}
+    #return {"re31": reprob.RE31, "re32": reprob.RE32, "re33": reprob.RE33, "re34": reprob.RE34, "re37": reprob.RE37,
+    #           "re41": reprob.RE41, "re42": reprob.RE42, "re61": reprob.RE61, "re91": reprob.RE91}
+
+
+def get_problem_object(prob_name:str, n_obj:int, n_var:int) -> Problem:
+    '''
+    Returns the Problem object with the given information. Works for DTLZ, RE and WFG problems.
+    '''
+    if prob_name[:2] == 're':
+        problem_obj = get_re_problems()[prob_name]()
+    elif prob_name[:3] == 'wfg' or prob_name[:4] == 'dtlz':
+        problem_obj = pymoo_provider.create_pymoo_problem(pymoo_provider.PymooProblemParams(name=prob_name, n_var=n_var, n_obj=n_obj))
+    else:
+        raise Exception('Invalid problem name.')
+
+    return problem_obj
 
 
 def get_test_problems() -> list[str]:

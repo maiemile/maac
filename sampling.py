@@ -6,14 +6,16 @@ import numpy as np
 from pflacco.classical_ela_features import (calculate_ela_meta, calculate_ela_distribution, calculate_pca, calculate_nbc,
                                             calculate_dispersion, calculate_information_content, calculate_ela_level)
 from desdeo.tools.non_dominated_sorting import fast_non_dominated_sort_indices
+from desdeo.emo.operators.evaluator import EMOEvaluator
+from desdeo.tools.patterns import Publisher
+        
 from scipy.spatial.distance import pdist
 import utils as util
-from generate_database import query_data, generate_feature_table, insert_data
+import polars as pl
+from generate_database import query_data, insert_data
 
-re_problems = util.get_re_problems()
 
-
-def sample_problem(problem:tuple[int,str,int,int]):
+def sample_problem(problem:tuple[int,str,int,int], sample_size:int=None) -> tuple[np.ndarray, np.ndarray]:
     '''
     Creates a sample of the given multi-objective optimization problem.
     Uses latin hypercube sampling to sample in the decision space
@@ -24,43 +26,35 @@ def sample_problem(problem:tuple[int,str,int,int]):
     n_obj = problem[2]
     n_var = problem[3]
 
-    # get the lower and upper bounds of the problem
-    if prob_name[:2] == 're':
-        problem_class = re_problems[prob_name]
-        lowerbound = problem_class().lbound
-        upperbound = problem_class().ubound
-    if prob_name[:3] == 'wfg':
-        lowerbound = [0.0] * n_var
-        upperbound = [1.0*2*(i+1) for i in range(n_var)]
-    if prob_name[:4] == 'dtlz':
-        lowerbound = [0.0] * n_var
-        upperbound = [1.0] * n_var
+    # get the problem object
+    problem_func = util.get_problem_object(prob_name, n_obj, n_var)
 
+    # get the lower and upper bounds of the variables from the problem object
+    lowerbound = [v.lowerbound for v in problem_func.variables]
+    upperbound = [v.upperbound for v in problem_func.variables]
 
     # generate a latin hypercube sample with 200*n_var samples
     rng = np.random.default_rng(seed=42)
     sampler = qmc.LatinHypercube(d=n_var, rng=rng)
-    n = 200*n_var
-    sample = sampler.random(n=n) # This number is from the article "Landscape Features and Automated Algorithm Selection for Multi-objective Interpolated Continuous Optimisation Problems"
+    if sample_size == None:
+        # This number is from the article "Landscape Features and Automated Algorithm Selection for Multi-objective Interpolated Continuous Optimisation Problems"
+        n = 200*n_var 
+    else:
+        n = sample_size
+    sample = sampler.random(n=n) 
     fixed_sample = qmc.scale(sample, lowerbound, upperbound)
 
+    publisher = Publisher()
     # evaluate the samples
-    if prob_name[:2] == 're':
-        evaluated = []
-        prob = problem_class()
-        for row in fixed_sample:
-            evaluated.append(prob.evaluate(row).tolist())
-        evaluated = np.array(evaluated)
-    # TODO: use the built-in DESDEO constructor for pymoo problems, evaluate directly, can fetch lower/upper bounds from the object earlier?
-    else:
-        problem_pymoo = get_problem(prob_name, n_var=n_var, n_obj=n_obj)
-        out = {}
-        problem_pymoo._evaluate(fixed_sample, out)
-        evaluated = out["F"]
+    evaluator = EMOEvaluator(problem=problem_func, verbosity=2, publisher=publisher)
+    evaluated = evaluator.evaluate(pl.DataFrame(fixed_sample, schema=[f"x_{i}" for i in range(1, n_var+1)]))
+    objective_names = [obj.name for obj in problem_func.objectives]
+    evaluated = np.array(evaluated[objective_names])
+
     return fixed_sample, evaluated
 
 
-def calculate_ela_features(X:np.array, y:np.array) -> dict:
+def calculate_ela_features(X:np.ndarray, y:np.ndarray) -> dict:
     '''
     Calculates 7 clasical single-objective exploratory landscape analysis feature sets from pflacco.
     '''
@@ -83,7 +77,7 @@ def calculate_ela_features(X:np.array, y:np.array) -> dict:
     return ela_dict
 
 
-def calculate_moo_features(X:np.array, y:np.array, nds_indices:list[list[int]]) -> dict:
+def calculate_moo_features(X:np.ndarray, y:np.ndarray, nds_indices:list[list[int]]) -> dict:
     '''
     Calculates some multi-objective specific exploratory landscape analysis features proposed by the following paper:
 
@@ -142,6 +136,83 @@ def calculate_moo_features(X:np.array, y:np.array, nds_indices:list[list[int]]) 
     return mo_ela_dict
 
 
+def ela_features(prob:tuple[int,str,int,int], aggregators:list[str], sample_size:int=None, only_feat_names=False) -> np.ndarray | list:
+    X, y = sample_problem(prob, sample_size)
+        
+    dictionaries = []
+    # calculate the features one objective function at a time
+    # Currently, 7 feature sets can be calculated without 
+    # explicitly giving the function or errors
+    for i in range(len(y[0])):
+        ela_dict = calculate_ela_features(X,y[:,i])
+        dictionaries.append(ela_dict)
+
+    max_dict = {}
+    min_dict = {}
+    avg_dict = {}
+    sd_dict = {}
+
+    # for each feature, calculate the max, min, avg and standard deviation
+    for key in dictionaries[0].keys():
+        max_dict[key] = max(d[key] for d in dictionaries)
+        min_dict[key] = min(d[key] for d in dictionaries)
+        avg_dict[key] = sum(d[key] for d in dictionaries) / len(dictionaries)
+        values = np.array([d[key] for d in dictionaries])
+        sd_dict[key] = np.std(values)
+
+    # do non-dominated sorting on the sample 
+    # then, use the front numbers as the "scalarized" objective functions to calculate ELA features
+    nds_indices = fast_non_dominated_sort_indices(y)
+    front_numbers = np.empty(len(y))
+
+    # fill the above empty array with the front numbers from th NDS data
+    for i in range(len(nds_indices)):
+        for j in range(len(nds_indices[i])):
+            index = nds_indices[i][j]
+            front_numbers[index] = i+1
+
+    # calculate the features on the NDS 
+    nds_ela_dict = calculate_ela_features(X,front_numbers)
+
+    # calculate features specific to multi-objective optimization
+    moo_ela_dict = calculate_moo_features(X,y,nds_indices)
+
+    dict_names = {"max":max_dict, "min": min_dict, "avg": avg_dict, "sd": sd_dict, "nds": nds_ela_dict, "moo": moo_ela_dict}
+    dicts = [dict_names[agg] for agg in aggregators]
+
+    # create lists of feature names and values
+    feature_names = []
+    feature_values = []
+    for i in range(len(dicts)):
+        for k, v in dicts[i].items():
+            # runtime isn't a feature
+            if 'runtime' in k:
+                continue
+            feature_name = k + '_' + aggregators[i]
+            # replace dots with underscores for SQLite
+            feature_names.append(feature_name.replace('.', '_'))
+            feature_values.append(v)
+
+    # if only feature names were requested, return them
+    if only_feat_names:
+        return feature_names
+    
+    # create the insert statement
+    sql = f'''INSERT INTO features(problem_id,'''
+    for key in feature_names:
+        sql += f'''{key},'''
+    sql = sql[:-1] + ''')\nVALUES('''
+    for _ in range(len(feature_names)+1): # +1 to account for problem_id
+        sql += '''?,'''
+    sql = sql[:-1] + ''')'''
+
+    # insert a row of data
+    prob_id = prob[0]
+    insert_data(sql, [[int(prob_id)] + feature_values])
+
+    return X, y
+
+
 def do(aggregators:list[str] = None):
     '''
     The default function for running the sampling procedures.
@@ -158,77 +229,10 @@ def do(aggregators:list[str] = None):
     if aggregators == None:
         aggregators = util.get_default_aggregators()
 
-    table_created = False
-    sql = None
-
     # loop through all problems and calculate the ELA features
     for prob in problem_instances:
-        X, y = sample_problem(prob)
+        _, _ = ela_features(prob, aggregators)
         
-        dictionaries = []
-        # calculate the features one objective function at a time
-        # Currently, 7 feature sets can be calculated without 
-        # explicitly giving the function or errors
-        for i in range(len(y[0])):
-            ela_dict = calculate_ela_features(X,y[:,i])
-
-            dictionaries.append(ela_dict)
-
-        max_dict = {}
-        min_dict = {}
-        avg_dict = {}
-        sd_dict = {}
-
-        # for each feature, calculate the max, min, avg and standard deviation
-        for key in dictionaries[0].keys():
-            max_dict[key] = max(d[key] for d in dictionaries)
-            min_dict[key] = min(d[key] for d in dictionaries)
-            avg_dict[key] = sum(d[key] for d in dictionaries) / len(dictionaries)
-            values = np.array([d[key] for d in dictionaries])
-            sd_dict[key] = np.std(values)
-
-        # do non-dominated sorting on the sample 
-        # then, use the front numbers as the "scalarized" objective functions to calculate ELA features
-        nds_indices = fast_non_dominated_sort_indices(y)
-        front_numbers = np.empty(len(y))
-
-        # fill the above empty array with the front numbers from th NDS data
-        for i in range(len(nds_indices)):
-            for j in range(len(nds_indices[i])):
-                index = nds_indices[i][j]
-                front_numbers[index] = i+1
-
-        #calculate the features on the NDS data
-        nds_ela_dict = calculate_ela_features(X,front_numbers)
-
-        #calculate features specific to multi-objective optimization
-        moo_ela_dict = calculate_moo_features(X,y,nds_indices)
-
-        dict_names = {"max":max_dict, "min": min_dict, "avg": avg_dict, "sd": sd_dict, "nds": nds_ela_dict, "moo": moo_ela_dict}
-        dicts = [dict_names[agg] for agg in aggregators]
-
-        # create lists of feature names and values
-        feature_names = []
-        feature_values = []
-        for i in range(len(dicts)):
-            for k, v in dicts[i].items():
-                # runtime isn't a feature
-                if 'runtime' in k:
-                    continue
-                feature_name = k + '_' + aggregators[i]
-                # replace dots with underscores for SQLite
-                feature_names.append(feature_name.replace('.', '_'))
-                feature_values.append(v)
-        
-        # check that the features table exists and fetch the SQL for data insertion
-        if not table_created:
-            sql = generate_feature_table(feature_names)
-            table_created = True
-
-        prob_id = prob[0]
-        # insert a row of data
-        insert_data(sql, [[int(prob_id)] + feature_values])
-
 
 if __name__ == "__main__":
     do()    

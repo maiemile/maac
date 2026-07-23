@@ -22,10 +22,10 @@ from desdeo.emo import (
 if __name__ == "__main__":
 
     num_of_repeats = 10
-    num_of_evaluations = 1000
+    num_of_evaluations = 10000
 
     # TODO: need a better implementation for this
-    pipeline = ["generate_database", "calculate_indicators"]#["approx_pf", "generate_database", "run_experiments", "calculate_indicators"]
+    pipeline = ["run_experiments"]#["approx_pf", "generate_database", "run_experiments", "calculate_indicators"]
     #pipeline = ["classification", "regression"]
 
     indicators = ["igd", "igd_plus"]
@@ -73,14 +73,14 @@ if __name__ == "__main__":
         #["wfg1", 9, 18],["wfg2", 9, 18], ["wfg3", 9, 18],["wfg4", 9, 18],["wfg5", 9, 18],["wfg6", 9, 18],["wfg7", 9, 18],["wfg8", 9, 18],["wfg9", 9, 18],
         # RE problems, 8 instances
         #["re31", 3, 3],["re32", 3, 4],["re33", 3, 4],["re34", 3, 5],["re37", 3, 4],
-        #["re41", 4, 7], # not included due to unexpected results while calculating the approximate Pareto front
+        ["re41", 4, 7], 
         #["re42", 4, 6],["re61", 6, 3], 
     ]
 
     setup = util.ExperimentalSetup(options, problem_instances)
 
     # TODO: there may be other paths that need to be checked
-    # TODO: remove hardcoded variables from files (beginning with classification and regression model files)
+    # TODO: remove hardcoded variables from files
     # TODO: add params
 
     if "generate_database" in pipeline:

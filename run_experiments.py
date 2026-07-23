@@ -3,14 +3,16 @@
 from desdeo.emo import (
     algorithms,termination,generator,repair
 )
-from desdeo.problem.external import pymoo_provider
 import numpy as np
 from pathlib import Path
 import os.path
 from multiprocessing import Pool, cpu_count
+from desdeo.emo.options.generator import ArchiveGeneratorOptions
 
 from generate_database import query_data
 import utils as util
+from sampling import ela_features
+import polars as pl
 
 pop_sizes = util.get_default_pop_sizes()
 
@@ -50,7 +52,14 @@ def run_experiment(run_id:int, ea_id:int, problem_id:int, seed:int, target_evals
     
     # fix the termination, generator and repair
     main_template.template.termination = termination.MaxEvaluationsTerminatorOptions(max_evaluations=target_evals)
-    main_template.template.generator = generator.LHSGeneratorOptions(n_points = pop_size)
+    if seed == 1: # ELA features only need to be calculated on the first seed 
+        # calculate the ELA features where the sample is the initial population
+        aggregators = util.get_default_aggregators()
+        initial_pop, outputs = ela_features((problem_id,prob_name,n_obj,n_var), aggregators, sample_size=pop_size)
+        main_template.template.generator = ArchiveGeneratorOptions(solutions=pl.DataFrame(initial_pop, schema=[f"x_{i}" for i in range(1, n_var+1)])
+                                                                   , outputs=pl.DataFrame(outputs, schema=[f"f_{i}" for i in range(1, n_obj+1)]))
+    else:
+        main_template.template.generator = generator.LHSGeneratorOptions(n_points = pop_size)
     main_template.template.repair = repair.ClipRepairOptions()
     main_template.template.seed = seed
 
@@ -70,12 +79,7 @@ def run_experiment(run_id:int, ea_id:int, problem_id:int, seed:int, target_evals
     except:
         pass
 
-    # create the problem object via Pymoo if possible
-    if prob_name[:3] == 'wfg' or prob_name[:4] == 'dtlz':
-        problem = pymoo_provider.create_pymoo_problem(pymoo_provider.PymooProblemParams(name=prob_name, n_var=n_var, n_obj=n_obj))
-    else: 
-        return
-    # TODO: handle RE problems
+    problem = util.get_problem_object(prob_name, n_obj, n_var)
 
     # construct the EA configuration and problem
     solver, extras = algorithms.emo_constructor(emo_options=main_template, problem=problem)
@@ -90,9 +94,6 @@ def run_experiment(run_id:int, ea_id:int, problem_id:int, seed:int, target_evals
     # save the archived solutions and the final population to csv files identified by the run ID
     util.write_to_csv(Path(BASE_PATH + 'archived_pops/' + str(run_id) + '.csv'), archived_solutions)
     util.write_to_csv(Path(BASE_PATH + 'archived_final_pops/' + str(run_id) + '.csv'), final_pop)
-    
-    # TODO: save EA template? / load existing one with the same ea_id?
-    # TODO: problems could be stored as JSONs and loaded here instead of creating them
 
 
 def do(setup:util.ExperimentalSetup):

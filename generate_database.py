@@ -138,6 +138,9 @@ def generate_ea_table(options:dict) -> None:
             name TEXT
             """
     
+    # TODO: might make sense to add all parameter columns individually so that new ones can be added automatically with user input
+    # to the existing table
+    
     # add the configuration options and their types to the sql statement
     # we also add a unique statement to avoid duplicate configurations
     unique = ",\nunique ("
@@ -263,30 +266,35 @@ def generate_run_table(n_of_repeats:list[int], target_evals:list[int], indicator
             insert_data(sql_statement, all_combinations)
 
 
-def generate_feature_table(feature_names:list[str]) -> str:
+def generate_feature_table(aggregators:list[str]=None):
     '''
     Generates a table for ELA features and returns the corresponding SQL INSERT statement.
     Each column corresponds to one feature. 
     '''
 
-    sql_statement =  """CREATE TABLE IF NOT EXISTS features (
-        problem_id INTEGER PRIMARY KEY """
-    
-    for feat_name in feature_names:
-        # add new column to SQL statement
-        sql_statement += f",\n{feat_name} REAL"
-    sql_statement += ",\nFOREIGN KEY(problem_id) REFERENCES problems(problem_id));"
-    # create the features table
-    execute_sql(sql_statement)
+    from sampling import ela_features
 
-    # create the insert statement
-    sql = f'''INSERT INTO features(problem_id,'''
-    for key in feature_names:
-        sql += f'''{key},'''
-    sql = sql[:-1] + ''')\nVALUES('''
-    for _ in range(len(feature_names)+1): # +1 to account for problem_id
-        sql += '''?,'''
-    sql = sql[:-1] + ''')'''
+    # if no aggregator list was provided, use the defaults
+    if aggregators == None:
+        aggregators = util.get_default_aggregators()
+
+    # TODO: this is somewhat hardcoded, at least find a problem id that exists!
+    sql_statement_prob = '''SELECT problem_id,name,obj,var FROM problems WHERE problem_id = 1'''
+    prob_data = query_data(sql_statement_prob)
+
+    # find the feature names by performing sampling on one problem with a small sample size
+    feature_names = ela_features(prob_data, aggregators, 100, only_feat_names=True)
+
+    # create the table
+    sql_statement =  """CREATE TABLE IF NOT EXISTS features (
+        problem_id INTEGER PRIMARY KEY, 
+        FOREIGN KEY(problem_id) REFERENCES problems(problem_id));"""
+    execute_sql(sql_statement)
+    
+    # add a column for each feature separately to allow new features in the existing table
+    for feat_name in feature_names:
+        sql = f'''ALTER TABLE features ADD COLUMN {feat_name} REAL;'''
+        execute_sql(sql)
 
     return sql
 
@@ -305,6 +313,7 @@ def do(setup: util.ExperimentalSetup, indicators:list[str], n_of_repeats:list[in
     generate_ea_table(options)
     generate_problem_table(problems)
     generate_run_table(n_of_repeats=n_of_repeats, target_evals=target_evals, indicators=indicators)
+    generate_feature_table()
 
 
 if __name__ == "__main__":
