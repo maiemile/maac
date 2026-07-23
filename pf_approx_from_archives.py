@@ -59,7 +59,6 @@ def calc_pf_approx(problem_id:int, pf_approx_size:int=2000) -> None:
         for i in range(pf_approx_size-1):
             distances = cdist(pf, chosen, metric='chebyshev').min(axis=1)
             chosen.append(pf[np.argmax(distances)])
-            print(problem_id, i)
     # otherwise just use the full PF approximation
     else:
         chosen = pf

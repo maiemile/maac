@@ -246,6 +246,7 @@ def generate_run_table(n_of_repeats:list[int], target_evals:list[int], indicator
     sql_ea = f'''SELECT ea_id FROM eas'''
     sql_prob = f'''SELECT problem_id FROM problems'''
 
+    # TODO: we might wish to use the options provided by the user...
     ea_ids = query_data(sql_ea)
     prob_ids = query_data(sql_prob)
 
