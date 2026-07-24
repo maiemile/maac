@@ -13,6 +13,9 @@ from pathlib import Path
 from desdeo.problem.testproblems import re_problem as re
 from desdeo.problem import Problem
 from desdeo.problem.external import pymoo_provider
+from desdeo.emo import (
+    algorithms,crossover,mutation
+    )
 
 
 class ExperimentalSetup():
