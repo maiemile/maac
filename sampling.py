@@ -71,7 +71,6 @@ def calculate_ela_features(X:np.ndarray, y:np.ndarray) -> dict:
     ela_dict = ela_dict | ic
     ela_dist = calculate_ela_distribution(X,y)
     ela_dict = ela_dict | ela_dist
-    print("calculate ela level called with data:", y)
     ela_level = calculate_ela_level(X,y)
     ela_dict = ela_dict | ela_level
 
@@ -139,17 +138,12 @@ def calculate_moo_features(X:np.ndarray, y:np.ndarray, nds_indices:list[list[int
 
 def ela_features(prob:tuple[int,str,int,int], aggregators:list[str], sample_size:int=None, only_feat_names=False) -> np.ndarray | list:
     X, y = sample_problem(prob, sample_size)
-    print(y)
-    print('----------------')
-    print(len(y[0]))
-    print('----------------')
         
     dictionaries = []
     # calculate the features one objective function at a time
     # Currently, 7 feature sets can be calculated without 
     # explicitly giving the function or errors
     for i in range(len(y[0])):
-        print('-------------',i,'--------------')
         ela_dict = calculate_ela_features(X,y[:,i])
         dictionaries.append(ela_dict)
 

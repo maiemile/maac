@@ -290,9 +290,6 @@ def generate_feature_table(aggregators:list[str]=None):
     # TODO: this is somewhat hardcoded, at least find a problem id that exists!
     sql_statement_prob = '''SELECT problem_id,name,obj,var FROM problems WHERE problem_id = 1'''
     prob_data = query_data(sql_statement_prob)
-    print('------------')
-    print(prob_data)
-    print('------------')
 
     # find the feature names by performing sampling on one problem with a small sample size
     feature_names = ela_features(prob_data, aggregators, 105, only_feat_names=True)
