@@ -108,11 +108,8 @@ def get_re_problems() -> dict:
     '''
     Returns all RE problems in a dictionary. Each value is the function name of the problem in DESDEO.
     '''
-    # TODO: add the remaining RE problem implementations (RE42)
     return {"re31": reprob.re31, "re32": reprob.re32, "re33": reprob.re33, "re34": re.re34, "re37": re.re37, 
             "re41": re.re41, "re42": reprob.re42, "re61": re.re61}
-    #return {"re31": reprob.RE31, "re32": reprob.RE32, "re33": reprob.RE33, "re34": reprob.RE34, "re37": reprob.RE37,
-    #           "re41": reprob.RE41, "re42": reprob.RE42, "re61": reprob.RE61, "re91": reprob.RE91}
 
 
 def get_problem_object(prob_name:str, n_obj:int, n_var:int) -> Problem:
