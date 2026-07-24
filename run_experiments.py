@@ -126,8 +126,9 @@ def do(setup:util.ExperimentalSetup):
     # sort in ascending order based on the seed
     uncompleted_runs.sort(key=lambda tup: tup[3])
 
+    ctx = mp.get_context("spawn")
     # Create a pool of workers and finish the uncompleted runs
-    with mp.Pool(processes=mp.cpu_count()) as pool:
+    with ctx.Pool(processes=mp.cpu_count()) as pool:
         # chunksize=1 for making sure that the calculation of the first seeds begins first  
         pool.starmap(run_experiment, uncompleted_runs, chunksize=1) 
         pool.terminate()
@@ -135,7 +136,6 @@ def do(setup:util.ExperimentalSetup):
 
 
 if __name__ == "__main__":
-    mp.set_start_method('spawn')
     options = {"selection": ["TEXT", {
                     "IBEA": algorithms.ibea_options(),
                     "NSGA-III": algorithms.nsga3_options(),

@@ -1,7 +1,6 @@
 # Code by @maiemile
 
 from scipy.stats import qmc, entropy
-from pymoo.problems import get_problem
 import numpy as np
 from pflacco.classical_ela_features import (calculate_ela_meta, calculate_ela_distribution, calculate_pca, calculate_nbc,
                                             calculate_dispersion, calculate_information_content, calculate_ela_level)
