@@ -6,7 +6,7 @@ from desdeo.emo import (
 import numpy as np
 from pathlib import Path
 import os.path
-from multiprocessing import Pool, cpu_count
+from multiprocessing import Pool, cpu_count, set_start_method
 from desdeo.emo.options.generator import ArchiveGeneratorOptions
 
 from generate_database import query_data
@@ -126,6 +126,7 @@ def do(setup:util.ExperimentalSetup):
     # sort in ascending order based on the seed
     uncompleted_runs.sort(key=lambda tup: tup[3])
 
+    set_start_method('spawn')
     # Create a pool of workers and finish the uncompleted runs
     with Pool(processes=cpu_count()) as pool:
         # chunksize=1 for making sure that the calculation of the first seeds begins first  
