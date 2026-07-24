@@ -292,7 +292,7 @@ def generate_feature_table(aggregators:list[str]=None):
     prob_data = query_data(sql_statement_prob)
 
     # find the feature names by performing sampling on one problem with a small sample size
-    feature_names = ela_features(prob_data, aggregators, 100, only_feat_names=True)
+    feature_names = ela_features(prob_data, aggregators, 105, only_feat_names=True)
 
     # create the table
     sql_statement =  """CREATE TABLE IF NOT EXISTS features (
