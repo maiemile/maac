@@ -71,6 +71,7 @@ def calculate_ela_features(X:np.ndarray, y:np.ndarray) -> dict:
     ela_dict = ela_dict | ic
     ela_dist = calculate_ela_distribution(X,y)
     ela_dict = ela_dict | ela_dist
+    print("calculate ela level called with data:", y)
     ela_level = calculate_ela_level(X,y)
     ela_dict = ela_dict | ela_level
 
@@ -148,6 +149,7 @@ def ela_features(prob:tuple[int,str,int,int], aggregators:list[str], sample_size
     # Currently, 7 feature sets can be calculated without 
     # explicitly giving the function or errors
     for i in range(len(y[0])):
+        print('-------------',i,'--------------')
         ela_dict = calculate_ela_features(X,y[:,i])
         dictionaries.append(ela_dict)
 
