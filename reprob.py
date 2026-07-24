@@ -249,8 +249,6 @@ def re42() -> Problem:
     '''
     Conceptual marine design.
     '''
-    # TODO: there are major bugs in this implementation, doesn't give the same results as the original for objective functions 1 and 3
-    # (partially differing results for f_4)
     x_1 = Variable(
         name="x_1",
         symbol="x_1",
@@ -314,15 +312,15 @@ def re42() -> Problem:
     machinery_weight = f"0.17 * ({power})**0.9"
     light_ship_weight = f"{steel_weight} + {outfit_weight} + {machinery_weight}"
 
-    ship_cost = f"0.26 * (2000.0 * ({steel_weight})**0.85  + 3500.0 * {outfit_weight} + 2400.0 * {power}**0.8)"
-    capital_costs = f"(0.2 * {ship_cost})"
+    ship_cost = f"0.26 * ((2000.0 * (({steel_weight})**0.85)) + (3500.0 *{outfit_weight}) + (2400.0 * (({power})**0.8)))"
+    capital_costs = f"({ship_cost})"
 
-    DWT = f"({displacement} - {light_ship_weight})"
+    DWT = f"({displacement} - ({light_ship_weight}))"
 
     running_costs = f"40000.0 * {DWT}**0.3"
 
     #round_trip_miles = "5000.0"
-    sea_days = f"(5000.0 / 24.0 * {x_Vk})"
+    sea_days = f"((5000.0 / 24.0) * {x_Vk})"
     #handling_rate = "8000.0"
 
     daily_consumption = f"(0.00456 * {power} + 0.2)"
@@ -339,21 +337,18 @@ def re42() -> Problem:
 
     voyage_costs = f"({fuel_cost} + {port_cost}) * {RTPA}"
     annual_costs = f"({capital_costs} + {running_costs} + {voyage_costs})"
-    print("annual_costs", annual_costs)
     annual_cargo = f"({cargo_DWT} * {RTPA})"
-    print("annual_cargo", annual_cargo)
 
     KB = f"0.53 * {x_T}"
     BMT = f"((0.085 * {x_CB} - 0.002) * {x_B} * {x_B}) / ({x_T} * {x_CB})"
     KG = f"(1.0 + 0.52 * {x_D})"
 
-
     f_1 = Objective(
         name="f_1",
         symbol="f_1",
-        func=f"{annual_costs}/{annual_cargo}",
+        func=f"{annual_costs} / {annual_cargo}",
         objective_type=ObjectiveTypeEnum.analytical,
-    )   
+    )     
     f_2 = Objective(
         name="f_2",
         symbol="f_2",
