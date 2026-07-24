@@ -6,7 +6,7 @@ from desdeo.emo import (
 import numpy as np
 from pathlib import Path
 import os.path
-from multiprocessing import Pool, cpu_count, set_start_method
+import multiprocessing as mp
 from desdeo.emo.options.generator import ArchiveGeneratorOptions
 
 from generate_database import query_data
@@ -127,7 +127,7 @@ def do(setup:util.ExperimentalSetup):
     uncompleted_runs.sort(key=lambda tup: tup[3])
 
     # Create a pool of workers and finish the uncompleted runs
-    with Pool(processes=cpu_count()) as pool:
+    with mp.Pool(processes=mp.cpu_count()) as pool:
         # chunksize=1 for making sure that the calculation of the first seeds begins first  
         pool.starmap(run_experiment, uncompleted_runs, chunksize=1) 
         pool.terminate()
@@ -135,7 +135,7 @@ def do(setup:util.ExperimentalSetup):
 
 
 if __name__ == "__main__":
-    set_start_method('spawn')
+    mp.set_start_method('spawn')
     options = {"selection": ["TEXT", {
                     "IBEA": algorithms.ibea_options(),
                     "NSGA-III": algorithms.nsga3_options(),
