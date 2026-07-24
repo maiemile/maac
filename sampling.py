@@ -138,6 +138,10 @@ def calculate_moo_features(X:np.ndarray, y:np.ndarray, nds_indices:list[list[int
 
 def ela_features(prob:tuple[int,str,int,int], aggregators:list[str], sample_size:int=None, only_feat_names=False) -> np.ndarray | list:
     X, y = sample_problem(prob, sample_size)
+    print(y)
+    print('----------------')
+    print(len(y[0]))
+    print('----------------')
         
     dictionaries = []
     # calculate the features one objective function at a time
