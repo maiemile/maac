@@ -12,6 +12,13 @@ pattern = "^[A-Za-z0-9_-]*$"
 # Load the filename of the database
 database = util.load_param_config('database_file')
 
+def get_number_of_rows(table:str) -> int:
+    '''Get the number of rows in a table'''
+    sql = f'''SELECT COUNT(1) FROM {table}'''
+    res = query_data(sql)
+    return res[0]
+
+
 def get_average_indicator(indicator:str="igd") -> list[tuple]:
     '''
     Returns a list of tuples with the average indicator value for each configuration and problem pair across all runs.
@@ -100,7 +107,7 @@ def insert_data(sql_statement:str, data:list) -> None:
             # commit the changes
             conn.commit()
 
-            print("Data created.")
+            #print("Data created.")
     except sqlite3.OperationalError as e:
         print("Failed to create data:", e)
 
@@ -122,9 +129,10 @@ def execute_sql(sql:str) -> None:
 
             # commit the changes
             conn.commit()
-            print("SQL successful.")
+            #("SQL successful.")
     except sqlite3.OperationalError as e:
-        print("Failed to execute SQL:", e)
+        if not "duplicate column name" in str(e):
+            print("Failed to execute SQL:", e)
 
 
 def generate_ea_table(options:dict) -> None:
@@ -312,8 +320,11 @@ def do(setup: util.ExperimentalSetup, indicators:list[str], n_of_repeats:list[in
 
     # generate the tables and fill them with data
     generate_ea_table(options)
+    print(get_number_of_rows("eas"))
     generate_problem_table(problems)
+    print(get_number_of_rows("problems"))
     generate_run_table(n_of_repeats=n_of_repeats, target_evals=target_evals, indicators=indicators)
+    print(get_number_of_rows("runs"))
     generate_feature_table()
 
 
