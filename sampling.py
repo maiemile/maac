@@ -52,7 +52,10 @@ def sample_problem(problem:tuple[int,str,int,int], sample_size:int=None) -> tupl
     publisher = Publisher()
     # evaluate the samples
     evaluator = EMOEvaluator(problem=problem_func, verbosity=2, publisher=publisher)
-    evaluated = evaluator.evaluate(pl.DataFrame(fixed_sample, schema=[f"x_{i}" for i in range(1, n_var+1)]))
+    try:
+        evaluated = evaluator.evaluate(pl.DataFrame(fixed_sample, schema=[f"x_{i}" for i in range(1, n_var+1)]))
+    except:
+        raise Exception(f"Exception in problem {problem[0]}: evaluation broken with dataframe, {fixed_sample}")
     objective_names = [obj.name for obj in problem_func.objectives]
     evaluated = np.array(evaluated[objective_names])
 
