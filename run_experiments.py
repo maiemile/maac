@@ -79,14 +79,16 @@ def run_experiment(run_id:int, ea_id:int, problem_id:int, seed:int, target_evals
         main_template.template.selection.reference_vector_options.number_of_vectors = pop_size
     except:
         pass
-
     try:
         main_template.template.selection.population_size = pop_size
     except:
         pass
-
     try: 
         main_template.template.mate_selection.winner_size = pop_size
+    except:
+        pass
+    try:
+        main_template.template.selection.parameter_adaptation_strategy = 'FUNCTION_EVALUATION_BASED'
     except:
         pass
 
@@ -129,7 +131,7 @@ def do(setup:util.ExperimentalSetup):
     # find uncompleted runs by identifying if archives have been saved for them
     uncompleted_runs = []
     for row in data:
-        if not os.path.isfile(Path(BASE_PATH + 'archived_pops/' + str(row[0]) + '.csv')) and row[3] != 1:
+        if not os.path.isfile(Path(BASE_PATH + 'archived_pops/' + str(row[0]) + '.csv')):
             new_row = list(row)
             # TODO: currently we just add the options here, in the future it might make sense to load 
             # them in the run_experiment function using dedicated JSONs and problem info.
