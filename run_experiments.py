@@ -13,6 +13,11 @@ from generate_database import query_data
 import utils as util
 from sampling import ela_features
 import polars as pl
+from datetime import datetime
+import time
+import logging
+logger = logging.getLogger(__name__)
+logging.basicConfig(filename='maac.log', level=logging.INFO)
 
 pop_sizes = util.get_default_pop_sizes()
 
@@ -27,7 +32,10 @@ def run_experiment(run_id:int, ea_id:int, problem_id:int, seed:int, target_evals
     Loads the problem defined by problem_id. Runs the EA configuration on that problem and stores the non-dominated
     archive and final population in CSV files.
     '''
-
+    start_time = time.time()
+    timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    process = mp.current_process()
+    logger.info(f'{timestamp} | {process} | Begin the run: {run_id}')
     print(f"run ID: {run_id}, EA ID: {ea_id}, problem ID: {problem_id}, seed: {seed}, target evaluations: {target_evals}")
 
     # prepare SQL statements to fetch data on the EA configuration and problem
@@ -56,6 +64,7 @@ def run_experiment(run_id:int, ea_id:int, problem_id:int, seed:int, target_evals
         # calculate the ELA features where the sample is the initial population
         aggregators = util.get_default_aggregators()
         initial_pop, outputs = ela_features((problem_id,prob_name,n_obj,n_var), aggregators, sample_size=pop_size)
+        logger.info(f'{timestamp} | {process} | In {run_id}, ELA took --- %s seconds ---' % (time.time() - start_time))
         main_template.template.generator = ArchiveGeneratorOptions(solutions=pl.DataFrame(initial_pop, schema=[f"x_{i}" for i in range(1, n_var+1)])
                                                                    , outputs=pl.DataFrame(outputs, schema=[f"f_{i}" for i in range(1, n_obj+1)]))
     else:
@@ -94,6 +103,10 @@ def run_experiment(run_id:int, ea_id:int, problem_id:int, seed:int, target_evals
     # save the archived solutions and the final population to csv files identified by the run ID
     util.write_to_csv(Path(BASE_PATH + 'archived_pops/' + str(run_id) + '.csv'), archived_solutions)
     util.write_to_csv(Path(BASE_PATH + 'archived_final_pops/' + str(run_id) + '.csv'), final_pop)
+
+    logger.info(f'{timestamp} | {process} | In {run_id}, calculations took --- %s seconds ---' % (time.time() - start_time))
+
+    return
 
 
 def do(setup:util.ExperimentalSetup):
