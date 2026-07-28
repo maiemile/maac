@@ -12,6 +12,12 @@ from scipy.spatial.distance import pdist
 import utils as util
 import polars as pl
 from generate_database import query_data, insert_data
+import logging
+import multiprocessing as mp
+import time
+import datetime
+logger = logging.getLogger(__name__)
+logging.basicConfig(filename='maac_ela.log', level=logging.INFO)
 
 
 def sample_problem(problem:tuple[int,str,int,int], sample_size:int=None) -> tuple[np.ndarray, np.ndarray]:
@@ -136,7 +142,11 @@ def calculate_moo_features(X:np.ndarray, y:np.ndarray, nds_indices:list[list[int
 
 
 def ela_features(prob:tuple[int,str,int,int], aggregators:list[str], sample_size:int=None, only_feat_names=False) -> np.ndarray | list:
+    start_time = time.time()
     X, y = sample_problem(prob, sample_size)
+    timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    process = mp.current_process()
+    logger.info(f'{timestamp} | {process} | {prob[0]}: ELA sampling took --- %s seconds ---' % (time.time() - start_time))
         
     dictionaries = []
     # calculate the features one objective function at a time
@@ -145,6 +155,8 @@ def ela_features(prob:tuple[int,str,int,int], aggregators:list[str], sample_size
     for i in range(len(y[0])):
         ela_dict = calculate_ela_features(X,y[:,i])
         dictionaries.append(ela_dict)
+
+    logger.info(f'{process} | {prob[0]}: ELA feature calculations took --- %s seconds ---' % (time.time() - start_time))
 
     max_dict = {}
     min_dict = {}
@@ -175,6 +187,8 @@ def ela_features(prob:tuple[int,str,int,int], aggregators:list[str], sample_size
 
     # calculate features specific to multi-objective optimization
     moo_ela_dict = calculate_moo_features(X,y,nds_indices)
+
+    logger.info(f'{process} | {prob[0]}: All ELA features calculated at --- %s seconds ---' % (time.time() - start_time))
 
     dict_names = {"max":max_dict, "min": min_dict, "avg": avg_dict, "sd": sd_dict, "nds": nds_ela_dict, "moo": moo_ela_dict}
     dicts = [dict_names[agg] for agg in aggregators]
@@ -208,6 +222,8 @@ def ela_features(prob:tuple[int,str,int,int], aggregators:list[str], sample_size
     # insert a row of data
     prob_id = prob[0]
     insert_data(sql, [[int(prob_id)] + feature_values])
+
+    logger.info(f'{process} | {prob[0]}: ELA feature calculations finished at --- %s seconds ---' % (time.time() - start_time))
 
     return X, y
 
