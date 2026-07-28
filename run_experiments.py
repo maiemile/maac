@@ -48,6 +48,7 @@ def run_experiment(run_id:int, ea_id:int, problem_id:int, seed:int, target_evals
     # unload the problem data
     prob_name, n_obj, n_var = prob_data
     pop_size = pop_sizes[n_obj]
+    problem = util.get_problem_object(prob_name, n_obj, n_var)
 
     # fetch the corresponding operators
     main_template = options["selection"][1][ea_data[0]]
@@ -65,8 +66,8 @@ def run_experiment(run_id:int, ea_id:int, problem_id:int, seed:int, target_evals
         aggregators = util.get_default_aggregators()
         initial_pop, outputs = ela_features((problem_id,prob_name,n_obj,n_var), aggregators, sample_size=pop_size)
         logger.info(f'{timestamp} | {process} | In {run_id}, ELA took --- %s seconds ---' % (time.time() - start_time))
-        main_template.template.generator = ArchiveGeneratorOptions(solutions=pl.DataFrame(initial_pop, schema=[f"x_{i}" for i in range(1, n_var+1)])
-                                                                   , outputs=pl.DataFrame(outputs, schema=[f"f_{i}" for i in range(1, n_obj+1)]))
+        main_template.template.generator = ArchiveGeneratorOptions(solutions=pl.DataFrame(initial_pop, schema=[var.symbol for var in problem.variables])
+                                                                   , outputs=pl.DataFrame(outputs, schema=[obj.symbol for obj in problem.objectives]))
     else:
         main_template.template.generator = generator.LHSGeneratorOptions(n_points = pop_size)
     main_template.template.repair = repair.ClipRepairOptions()
@@ -88,14 +89,12 @@ def run_experiment(run_id:int, ea_id:int, problem_id:int, seed:int, target_evals
     except:
         pass
 
-    problem = util.get_problem_object(prob_name, n_obj, n_var)
-
     # construct the EA configuration and problem
     solver, extras = algorithms.emo_constructor(emo_options=main_template, problem=problem)
     res = solver()
 
     # fetch the final population and the archive
-    objective_names = [obj.name for obj in problem.objectives]
+    objective_names = [obj.symbol for obj in problem.objectives]
     final_pop = np.array(res.optimal_outputs[objective_names])
     archived_solutions = np.array(extras.archive.results.optimal_outputs[objective_names])
     #print(f"Total number of non-dominated solutions in archive: {len(extras.archive.results.optimal_outputs)}")
@@ -141,7 +140,7 @@ def do(setup:util.ExperimentalSetup):
 
     ctx = mp.get_context("spawn")
     # Create a pool of workers and finish the uncompleted runs
-    with ctx.Pool(processes=10) as pool:
+    with ctx.Pool(processes=100) as pool:
         # chunksize=1 for making sure that the calculation of the first seeds begins first  
         pool.starmap(run_experiment, uncompleted_runs) 
         pool.terminate()

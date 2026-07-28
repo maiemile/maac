@@ -15,7 +15,7 @@ from generate_database import query_data, insert_data
 import logging
 import multiprocessing as mp
 import time
-import datetime
+from datetime import datetime
 logger = logging.getLogger(__name__)
 logging.basicConfig(filename='maac_ela.log', level=logging.INFO)
 
@@ -52,11 +52,8 @@ def sample_problem(problem:tuple[int,str,int,int], sample_size:int=None) -> tupl
     publisher = Publisher()
     # evaluate the samples
     evaluator = EMOEvaluator(problem=problem_func, verbosity=2, publisher=publisher)
-    try:
-        evaluated = evaluator.evaluate(pl.DataFrame(fixed_sample, schema=[f"x_{i}" for i in range(1, n_var+1)]))
-    except:
-        raise Exception(f"Exception in problem {problem[0]}: evaluation broken with dataframe, {fixed_sample}")
-    objective_names = [obj.name for obj in problem_func.objectives]
+    evaluated = evaluator.evaluate(pl.DataFrame(fixed_sample, schema=[var.symbol for var in problem_func.variables]))
+    objective_names = [obj.symbol for obj in problem_func.objectives]
     evaluated = np.array(evaluated[objective_names])
 
     return fixed_sample, evaluated
