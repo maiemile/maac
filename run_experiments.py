@@ -101,8 +101,8 @@ def run_experiment(run_id:int, ea_id:int, problem_id:int, seed:int, target_evals
     #print(f"Total number of non-dominated solutions in archive: {len(extras.archive.results.optimal_outputs)}")
 
     # save the archived solutions and the final population to csv files identified by the run ID
-    util.write_to_csv(Path(BASE_PATH + 'archived_pops/' + str(run_id) + '.csv'), archived_solutions)
     util.write_to_csv(Path(BASE_PATH + 'archived_final_pops/' + str(run_id) + '.csv'), final_pop)
+    util.write_to_csv(Path(BASE_PATH + 'archived_pops/' + str(run_id) + '.csv'), archived_solutions)
 
     logger.info(f'{timestamp} | {process} | In {run_id}, calculations took --- %s seconds ---' % (time.time() - start_time))
 
@@ -141,9 +141,9 @@ def do(setup:util.ExperimentalSetup):
 
     ctx = mp.get_context("spawn")
     # Create a pool of workers and finish the uncompleted runs
-    with ctx.Pool(processes=mp.cpu_count()) as pool:
+    with ctx.Pool(processes=10) as pool:
         # chunksize=1 for making sure that the calculation of the first seeds begins first  
-        pool.starmap(run_experiment, uncompleted_runs, chunksize=1) 
+        pool.starmap(run_experiment, uncompleted_runs) 
         pool.terminate()
         pool.join()
 
