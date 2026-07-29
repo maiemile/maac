@@ -117,6 +117,12 @@ def run_experiment(run_id:int, ea_id:int, problem_id:int, seed:int, target_evals
 
     except:
         logger.info(f'Run {run_id} with {ea_data} failed')
+        file = Path(BASE_PATH + 'archived_pops/' + str(run_id) + '_error.txt')
+        with open(file, "w") as text_file:
+            text_file.write("ERROR")
+        file = Path(BASE_PATH + 'archived_final_pops/' + str(run_id) + '_error.txt')
+        with open(file, "w") as text_file:
+            text_file.write("ERROR")
         return
 
     return
@@ -143,7 +149,7 @@ def do(setup:util.ExperimentalSetup):
     uncompleted_runs = []
     for row in data:
         # TODO: maybe archived final pops should be checked too
-        if not os.path.isfile(Path(BASE_PATH + 'archived_pops/' + str(row[0]) + '.csv')):
+        if not os.path.isfile(Path(BASE_PATH + 'archived_pops/' + str(row[0]) + '.csv')) and (not os.path.isfile(Path(BASE_PATH + 'archived_pops/' + str(row[0]) + '_error.txt'))):
             new_row = list(row)
             logger.info(new_row)
             # TODO: currently we just add the options here, in the future it might make sense to load 
