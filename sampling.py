@@ -73,22 +73,17 @@ def calculate_ela_features(X:np.ndarray, y:np.ndarray) -> dict:
     logger.info(f'{timestamp} | {process}: ELA Meta finished at --- %s seconds ---' % (time.time() - start_time))
     pca = calculate_pca(X,y)
     ela_dict = ela_dict | pca
-    logger.info(f'{timestamp} | {process}: PCA finished at --- %s seconds ---' % (time.time() - start_time))
     nbc = calculate_nbc(X,y)
     ela_dict = ela_dict | nbc
-    logger.info(f'{timestamp} | {process}: NBC finished at --- %s seconds ---' % (time.time() - start_time))
     disp = calculate_dispersion(X,y)
     ela_dict = ela_dict | disp
-    logger.info(f'{timestamp} | {process}: Dispersion finished at --- %s seconds ---' % (time.time() - start_time))
     ic = calculate_information_content(X,y)
     ela_dict = ela_dict | ic
     logger.info(f'{timestamp} | {process}: IC finished at --- %s seconds ---' % (time.time() - start_time))
     ela_dist = calculate_ela_distribution(X,y)
     ela_dict = ela_dict | ela_dist
-    logger.info(f'{timestamp} | {process}: ELA Distribution finished at --- %s seconds ---' % (time.time() - start_time))
     ela_level = calculate_ela_level(X,y)
     ela_dict = ela_dict | ela_level
-    logger.info(f'{timestamp} | {process}: ELA Level finished at --- %s seconds ---' % (time.time() - start_time))
 
     return ela_dict
 
@@ -131,8 +126,6 @@ def calculate_moo_features(X:np.ndarray, y:np.ndarray, nds_indices:list[list[int
     entropy_nds = entropy(prob_per_front) # FEAT: rank_ent
     mo_ela_dict['rank_ent'] = entropy_nds
 
-    logger.info(f'{timestamp} | {process}: MOO easy calculations done at --- %s seconds ---' % (time.time() - start_time))
-
     # average and maximum distances between decision vectors
     dists_var = pdist(X)
     dist_x_avg = np.mean(dists_var)
@@ -154,8 +147,6 @@ def calculate_moo_features(X:np.ndarray, y:np.ndarray, nds_indices:list[list[int
     mo_ela_dict['dist_x_nd_avg'] = dist_x_nd_avg
     dist_x_nd_max = np.max(dists_nd)
     mo_ela_dict['dist_x_nd_max'] = dist_x_nd_max
-
-    logger.info(f'{timestamp} | {process}: MOO expensive calculations done at --- %s seconds ---' % (time.time() - start_time))
 
     return mo_ela_dict
 
@@ -205,11 +196,8 @@ def ela_features(prob:tuple[int,str,int,int], aggregators:list[str], sample_size
     # calculate the features on the NDS 
     nds_ela_dict = calculate_ela_features(X,front_numbers)
 
-    logger.info(f'{process} | {prob[0]}: All ELA (except MOO) features calculated at --- %s seconds ---' % (time.time() - start_time))
     # calculate features specific to multi-objective optimization
     moo_ela_dict = calculate_moo_features(X,y,nds_indices)
-
-    logger.info(f'{process} | {prob[0]}: All ELA features calculated at --- %s seconds ---' % (time.time() - start_time))
 
     dict_names = {"max":max_dict, "min": min_dict, "avg": avg_dict, "sd": sd_dict, "nds": nds_ela_dict, "moo": moo_ela_dict}
     dicts = [dict_names[agg] for agg in aggregators]
@@ -244,8 +232,6 @@ def ela_features(prob:tuple[int,str,int,int], aggregators:list[str], sample_size
     prob_id = prob[0]
     if seed != None:
         insert_data(sql, [[int(prob_id), seed] + feature_values])
-
-    logger.info(f'{process} | {prob[0]}: ELA feature calculations finished at --- %s seconds ---' % (time.time() - start_time))
 
     return X, y
 
