@@ -12,6 +12,8 @@ from desdeo.emo.options.generator import ArchiveGeneratorOptions
 from generate_database import query_data
 import utils as util
 from sampling import ela_features
+import os
+os.environ["POLARS_MAX_THREADS"] = "1"
 import polars as pl
 from datetime import datetime
 import time
@@ -62,15 +64,17 @@ def run_experiment(run_id:int, ea_id:int, problem_id:int, seed:int, target_evals
     
     # fix the termination, generator and repair
     main_template.template.termination = termination.MaxEvaluationsTerminatorOptions(max_evaluations=target_evals)
-    if seed == 1: # ELA features only need to be calculated on the first seed 
-        # calculate the ELA features where the sample is the initial population
+
+    # TODO: this is a dumb workaround for only calculating ELA features once for each pair of problem and seed
+    if ea_id == 1:
         aggregators = util.get_default_aggregators()
-        initial_pop, outputs = ela_features((problem_id,prob_name,n_obj,n_var), aggregators, sample_size=pop_size)
+        initial_pop, outputs = ela_features((problem_id,prob_name,n_obj,n_var), aggregators, sample_size=pop_size, seed=seed)
         logger.info(f'{timestamp} | {prob_name} | {process} | In {run_id}, ELA took --- %s seconds ---' % (time.time() - start_time))
         main_template.template.generator = ArchiveGeneratorOptions(solutions=pl.DataFrame(initial_pop, schema=[var.symbol for var in problem.variables])
                                                                    , outputs=pl.DataFrame(outputs, schema=[obj.symbol for obj in problem.objectives]))
     else:
         main_template.template.generator = generator.LHSGeneratorOptions(n_points = pop_size)
+
     main_template.template.repair = repair.ClipRepairOptions()
     main_template.template.seed = seed
 
@@ -131,6 +135,7 @@ def do(setup:util.ExperimentalSetup):
     # find uncompleted runs by identifying if archives have been saved for them
     uncompleted_runs = []
     for row in data:
+        # TODO: maybe archived final pops should be checked too
         if not os.path.isfile(Path(BASE_PATH + 'archived_pops/' + str(row[0]) + '.csv')):
             new_row = list(row)
             # TODO: currently we just add the options here, in the future it might make sense to load 

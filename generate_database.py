@@ -258,8 +258,17 @@ def generate_run_table(n_of_repeats:list[int], target_evals:list[int], indicator
     ea_ids = query_data(sql_ea)
     prob_ids = query_data(sql_prob)
 
-    ea_ids_list = [x[0] for x in ea_ids]
-    prob_ids_list = [x[0] for x in prob_ids]
+    # in case there is just one EA configuration
+    if len(ea_ids) > 1:
+        ea_ids_list = [x[0] for x in ea_ids]
+    elif len(ea_ids) == 1:
+        ea_ids_list = [ea_ids[0]]
+
+    # in case there is just one problem instance
+    if len(prob_ids) > 1:
+        prob_ids_list = [x[0] for x in prob_ids]
+    elif len(prob_ids) == 1:
+        prob_ids_list = [prob_ids[0]]
 
     # for each value of target_evals, create as many repeats as listed in n_of_repeats
     # of the same EA configuration + problem pair
@@ -296,7 +305,9 @@ def generate_feature_table(aggregators:list[str]=None):
 
     # create the table
     sql_statement =  """CREATE TABLE IF NOT EXISTS features (
-        problem_id INTEGER PRIMARY KEY, 
+        problem_id INTEGER, 
+        seed INTEGER,
+        PRIMARY KEY(problem_id, seed)
         FOREIGN KEY(problem_id) REFERENCES problems(problem_id));"""
     execute_sql(sql_statement)
     

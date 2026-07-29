@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 logging.basicConfig(filename='maac_ela.log', level=logging.INFO)
 
 
-def sample_problem(problem:tuple[int,str,int,int], sample_size:int=None) -> tuple[np.ndarray, np.ndarray]:
+def sample_problem(problem:tuple[int,str,int,int], sample_size:int=None, seed:int=None) -> tuple[np.ndarray, np.ndarray]:
     '''
     Creates a sample of the given multi-objective optimization problem.
     Uses latin hypercube sampling to sample in the decision space
@@ -39,8 +39,9 @@ def sample_problem(problem:tuple[int,str,int,int], sample_size:int=None) -> tupl
     upperbound = [v.upperbound for v in problem_func.variables]
 
     # generate a latin hypercube sample with 200*n_var samples
-    rng = np.random.default_rng(seed=42)
-    sampler = qmc.LatinHypercube(d=n_var, rng=rng)
+    if seed == None:
+        seed = 42
+    sampler = qmc.LatinHypercube(d=n_var, seed=seed)
     if sample_size == None:
         # This number is from the article "Landscape Features and Automated Algorithm Selection for Multi-objective Interpolated Continuous Optimisation Problems"
         n = 200*n_var 
@@ -64,20 +65,30 @@ def calculate_ela_features(X:np.ndarray, y:np.ndarray) -> dict:
     Calculates 7 clasical single-objective exploratory landscape analysis feature sets from pflacco.
     '''
     # calculate 7 feature sets and combine the results to a dictionary
+    start_time = time.time()
+    timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    process = mp.current_process()
     ela_meta = calculate_ela_meta(X,y)
     ela_dict = ela_meta
+    logger.info(f'{timestamp} | {process}: ELA Meta finished at --- %s seconds ---' % (time.time() - start_time))
     pca = calculate_pca(X,y)
     ela_dict = ela_dict | pca
+    logger.info(f'{timestamp} | {process}: PCA finished at --- %s seconds ---' % (time.time() - start_time))
     nbc = calculate_nbc(X,y)
     ela_dict = ela_dict | nbc
+    logger.info(f'{timestamp} | {process}: NBC finished at --- %s seconds ---' % (time.time() - start_time))
     disp = calculate_dispersion(X,y)
     ela_dict = ela_dict | disp
+    logger.info(f'{timestamp} | {process}: Dispersion finished at --- %s seconds ---' % (time.time() - start_time))
     ic = calculate_information_content(X,y)
     ela_dict = ela_dict | ic
+    logger.info(f'{timestamp} | {process}: IC finished at --- %s seconds ---' % (time.time() - start_time))
     ela_dist = calculate_ela_distribution(X,y)
     ela_dict = ela_dict | ela_dist
+    logger.info(f'{timestamp} | {process}: ELA Distribution finished at --- %s seconds ---' % (time.time() - start_time))
     ela_level = calculate_ela_level(X,y)
     ela_dict = ela_dict | ela_level
+    logger.info(f'{timestamp} | {process}: ELA Level finished at --- %s seconds ---' % (time.time() - start_time))
 
     return ela_dict
 
@@ -91,6 +102,10 @@ def calculate_moo_features(X:np.ndarray, y:np.ndarray, nds_indices:list[list[int
     In Proceedings of the Genetic and Evolutionary Computation Conference (GECCO '21). Association for Computing Machinery, 
     New York, NY, USA, 421–429. https://doi.org/10.1145/3449639.3459353
     '''
+
+    start_time = time.time()
+    timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    process = mp.current_process()
 
     # calculate how many solutions there are per non-dominated front
     samples_per_front = []
@@ -116,6 +131,8 @@ def calculate_moo_features(X:np.ndarray, y:np.ndarray, nds_indices:list[list[int
     entropy_nds = entropy(prob_per_front) # FEAT: rank_ent
     mo_ela_dict['rank_ent'] = entropy_nds
 
+    logger.info(f'{timestamp} | {process}: MOO easy calculations done at --- %s seconds ---' % (time.time() - start_time))
+
     # average and maximum distances between decision vectors
     dists_var = pdist(X)
     dist_x_avg = np.mean(dists_var)
@@ -138,15 +155,16 @@ def calculate_moo_features(X:np.ndarray, y:np.ndarray, nds_indices:list[list[int
     dist_x_nd_max = np.max(dists_nd)
     mo_ela_dict['dist_x_nd_max'] = dist_x_nd_max
 
+    logger.info(f'{timestamp} | {process}: MOO expensive calculations done at --- %s seconds ---' % (time.time() - start_time))
+
     return mo_ela_dict
 
 
-def ela_features(prob:tuple[int,str,int,int], aggregators:list[str], sample_size:int=None, only_feat_names=False) -> np.ndarray | list:
+def ela_features(prob:tuple[int,str,int,int], aggregators:list[str], sample_size:int=None, 
+                 only_feat_names=False, seed:int=None) -> np.ndarray | list:
     start_time = time.time()
-    X, y = sample_problem(prob, sample_size)
-    timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    X, y = sample_problem(prob, sample_size, seed)
     process = mp.current_process()
-    logger.info(f'{timestamp} | {process} | {prob[0]}: ELA sampling took --- %s seconds ---' % (time.time() - start_time))
         
     dictionaries = []
     # calculate the features one objective function at a time
@@ -176,6 +194,8 @@ def ela_features(prob:tuple[int,str,int,int], aggregators:list[str], sample_size
     nds_indices = fast_non_dominated_sort_indices(y)
     front_numbers = np.empty(len(y))
 
+    logger.info(f'{process} | {prob[0]}: NDS calculated at --- %s seconds ---' % (time.time() - start_time))
+
     # fill the above empty array with the front numbers from th NDS data
     for i in range(len(nds_indices)):
         for j in range(len(nds_indices[i])):
@@ -185,6 +205,7 @@ def ela_features(prob:tuple[int,str,int,int], aggregators:list[str], sample_size
     # calculate the features on the NDS 
     nds_ela_dict = calculate_ela_features(X,front_numbers)
 
+    logger.info(f'{process} | {prob[0]}: All ELA (except MOO) features calculated at --- %s seconds ---' % (time.time() - start_time))
     # calculate features specific to multi-objective optimization
     moo_ela_dict = calculate_moo_features(X,y,nds_indices)
 
@@ -211,17 +232,18 @@ def ela_features(prob:tuple[int,str,int,int], aggregators:list[str], sample_size
         return feature_names
     
     # create the insert statement
-    sql = f'''INSERT INTO features(problem_id,'''
+    sql = f'''INSERT INTO features(problem_id, seed,'''
     for key in feature_names:
         sql += f'''{key},'''
     sql = sql[:-1] + ''')\nVALUES('''
-    for _ in range(len(feature_names)+1): # +1 to account for problem_id
+    for _ in range(len(feature_names)+2): # +2 to account for problem_id and seed
         sql += '''?,'''
     sql = sql[:-1] + ''')'''
 
     # insert a row of data
     prob_id = prob[0]
-    insert_data(sql, [[int(prob_id)] + feature_values])
+    if seed != None:
+        insert_data(sql, [[int(prob_id), seed] + feature_values])
 
     logger.info(f'{process} | {prob[0]}: ELA feature calculations finished at --- %s seconds ---' % (time.time() - start_time))
 
