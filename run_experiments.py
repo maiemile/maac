@@ -145,10 +145,10 @@ def do(setup:util.ExperimentalSetup):
         # TODO: maybe archived final pops should be checked too
         if not os.path.isfile(Path(BASE_PATH + 'archived_pops/' + str(row[0]) + '.csv')):
             new_row = list(row)
+            logger.info(new_row)
             # TODO: currently we just add the options here, in the future it might make sense to load 
             # them in the run_experiment function using dedicated JSONs and problem info.
             new_row.append(options)
-            logger.info(new_row)
             uncompleted_runs.append(new_row)
 
     # sort in ascending order based on the seed
