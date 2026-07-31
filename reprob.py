@@ -1,13 +1,3 @@
-"""
-  RE problem adaptations to DESDEO by @maiemile, based on the 'reproblems' package.
-
-  A real-world multi-objective problem suite (the RE benchmark set) 
-  Reference:
-  Ryoji Tanabe, Hisao Ishibuchi, "An Easy-to-use Real-world Multi-objective Problem Suite" Applied Soft Computing. 89: 106078 (2020)
-
-  https://github.com/ryojitanabe/reproblems/blob/master/reproblem_python_ver/reproblem.py
-"""
-
 from desdeo.problem import Problem
 from desdeo.problem.schema import (
     Objective,
@@ -19,8 +9,23 @@ from desdeo.problem.schema import (
 
 
 def re31() -> Problem:
-    '''
-    Two bar truss design.
+    r'''
+    Two bar truss design problem.
+
+    References:
+        Coello Coello, C. A. & Pulido, G. T.  (2005).
+            Multiobjective structural optimization using a microgenetic algorithm.
+            Structural and Multidisciplinary Optimization 30 (5) 388-403.
+
+        Tanabe, R. & Ishibuchi, H. (2020). 
+            An easy-to-use real-world multi-objective optimization problem suite.
+            Applied soft computing, 89, 106078.
+            https://doi.org/10.1016/j.asoc.2020.106078.
+
+            https://github.com/ryojitanabe/reproblems/blob/master/reproblem_python_ver/reproblem.py
+
+    Returns:
+        Problem: an instance of the two bar truss design problem
     '''
     x_1 = Variable(
         name="x_1",
@@ -72,7 +77,7 @@ def re31() -> Problem:
                 objective_type=ObjectiveTypeEnum.analytical,
                 is_linear=False,
                 is_convex=False,
-                is_twice_differentiable=True,
+                is_twice_differentiable=False,
         )
 
     return Problem(
@@ -85,7 +90,22 @@ def re31() -> Problem:
 
 def re32() -> Problem:
     '''
-    Welded beam design.
+    The welded beam design problem.
+
+    References:
+        Ray, T. & Liew, K. M. (2002).
+            A Swarm Metaphor for Multiobjective Design Optimization. 
+            Engineering Optimization 34 (2) 141-153.
+
+        Tanabe, R. & Ishibuchi, H. (2020). 
+            An easy-to-use real-world multi-objective optimization problem suite.
+            Applied soft computing, 89, 106078.
+            https://doi.org/10.1016/j.asoc.2020.106078.
+
+            https://github.com/ryojitanabe/reproblems/blob/master/reproblem_python_ver/reproblem.py
+
+    Returns:
+        Problem: an instance of the welded beam design problem
     '''
 
     x_1 = Variable(
@@ -161,7 +181,7 @@ def re32() -> Problem:
         objective_type=ObjectiveTypeEnum.analytical,
         is_linear=False,
         is_convex=False,
-        is_twice_differentiable=True,
+        is_twice_differentiable=False,
     )
 
     return Problem(
@@ -171,9 +191,25 @@ def re32() -> Problem:
         objectives=[f_1, f_2, f_3],
     )
 
+
 def re33() -> Problem:
     '''
-    Disc brake design.
+    The disc brake design problem.
+
+    References:
+        Ray, T. & Liew, K. M. (2002).
+            A Swarm Metaphor for Multiobjective Design Optimization. 
+            Engineering Optimization 34 (2) 141-153.
+
+        Tanabe, R. & Ishibuchi, H. (2020). 
+            An easy-to-use real-world multi-objective optimization problem suite.
+            Applied soft computing, 89, 106078.
+            https://doi.org/10.1016/j.asoc.2020.106078.
+
+            https://github.com/ryojitanabe/reproblems/blob/master/reproblem_python_ver/reproblem.py
+
+    Returns:
+        Problem: an instance of the disc brake design problem
     '''
 
     x_1 = Variable(
@@ -234,7 +270,7 @@ def re33() -> Problem:
         objective_type=ObjectiveTypeEnum.analytical,
         is_linear=False,
         is_convex=False,
-        is_twice_differentiable=True,
+        is_twice_differentiable=False,
     ) 
 
     return Problem(
@@ -247,7 +283,23 @@ def re33() -> Problem:
 
 def re42() -> Problem:
     '''
-    Conceptual marine design.
+    The conceptual marine design problem.
+
+    References:
+        Parsons, M. G. & Scott, R. L. (2004) 
+            Formulation of multicriterion design optimization problems 
+            for solution with scalar numerical optimization methods.
+            Journal of Ship Research 48 (1) 61-76.
+
+        Tanabe, R. & Ishibuchi, H. (2020). 
+            An easy-to-use real-world multi-objective optimization problem suite.
+            Applied soft computing, 89, 106078.
+            https://doi.org/10.1016/j.asoc.2020.106078.
+
+            https://github.com/ryojitanabe/reproblems/blob/master/reproblem_python_ver/reproblem.py
+
+    Returns:
+        Problem: an instance of the conceptual marine design problem
     '''
     x_1 = Variable(
         name="x_1",
@@ -379,7 +431,7 @@ def re42() -> Problem:
 
     return Problem(
         name="Conceptual marine design",
-        description="The Conceptual marine design problem.",
+        description="The conceptual marine design problem.",
         variables=[x_1, x_2, x_3, x_4, x_5, x_6],
         objectives=[f_1, f_2, f_3, f_4],
     )

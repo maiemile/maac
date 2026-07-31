@@ -150,7 +150,7 @@ def do(setup:util.ExperimentalSetup):
     uncompleted_runs = []
     for row in data:
         # TODO: maybe archived final pops should be checked too
-        if not os.path.isfile(Path(BASE_PATH + 'archived_pops/' + str(row[0]) + '.csv')) and row[3] == 1:
+        if not os.path.isfile(Path(BASE_PATH + 'archived_pops/' + str(row[0]) + '.csv')):
             new_row = list(row)
             logger.info(new_row)
             # TODO: currently we just add the options here, in the future it might make sense to load 
