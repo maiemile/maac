@@ -16,7 +16,7 @@ from generate_database import query_data
 
 BASE_PATH = util.load_param_config('base_path')
 
-def calc_pf_approx(problem_id:int, pf_approx_size:int=2000) -> None:
+def calc_pf_approx(problem_id:int, pf_approx_size:int=None) -> None:
     '''
     Calculates the Pareto front approximation for the given problem.
     Uses non-dominated archives of algorithm configuration runs on the given problem.
@@ -28,6 +28,14 @@ def calc_pf_approx(problem_id:int, pf_approx_size:int=2000) -> None:
     # get all run_ids where the current problem was run
     sql = '''SELECT run_id FROM runs WHERE problem_id = ?'''
     runs = query_data(sql, (problem_id,))
+
+    counter = 0
+
+    if pf_approx_size == None:
+        sql_prob = '''SELECT obj FROM problems WHERE problem_id = ?'''
+        n_obj = query_data(sql_prob, (problem_id,))[0]
+        print(n_obj)
+        pf_approx_size = util.get_default_ref_pf_size(n_obj)
 
     pf = []
     for run in runs:
@@ -46,6 +54,9 @@ def calc_pf_approx(problem_id:int, pf_approx_size:int=2000) -> None:
             df2 = pl.from_numpy(pf2)
             pf = pl.concat([df1.filter(mask1), df2.filter(mask2)])
             pf = np.array(pf)
+            counter += 1
+            if counter % 10 == 0:
+                print(counter)
         # unless there is nothing to merge with, then set the first archive as the initial non-dominated population
         except:
             pf = pf2
@@ -54,7 +65,7 @@ def calc_pf_approx(problem_id:int, pf_approx_size:int=2000) -> None:
     print(len(pf), problem_id)
     print('--------------------')
     # if PF approximation is too large, perform distance-based subset selection
-    if len(pf) > pf_approx_size: # TODO: pf_approx_size could be dependent on the number of objective functions
+    if len(pf) > pf_approx_size:
         chosen = [pf[0]]
         for i in range(pf_approx_size-1):
             distances = cdist(pf, chosen, metric='chebyshev').min(axis=1)

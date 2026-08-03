@@ -174,6 +174,14 @@ def get_default_pop_sizes() -> dict:
     return {3: 105, 4: 120, 6: 132, 9: 210} # from the RVEA article, partially interpolated
 
 
+def get_default_ref_pf_size(n_obj:int) -> int:
+    '''
+    Returns the default reference Pareto front size for the given number of objective functions.
+    '''
+    pf_sizes = {3: 1500, 4: 2000, 6: 3000, 9: 4500}
+    return pf_sizes[n_obj]
+
+
 def get_labels_from_file(labels: list[str], feat_sets: list[str]) -> list[str]:
     '''
     Obtain all ELA feature names from files corresponding to the feature set names.

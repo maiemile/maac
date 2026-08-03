@@ -9,11 +9,11 @@ from desdeo.problem.schema import (
 
 
 def re31() -> Problem:
-    r'''
-    Two bar truss design problem.
+    r"""
+    The two bar truss design problem.
 
     References:
-        Coello Coello, C. A. & Pulido, G. T.  (2005).
+        Coello Coello, C. A. & Pulido, G. T. (2005).
             Multiobjective structural optimization using a microgenetic algorithm.
             Structural and Multidisciplinary Optimization 30 (5) 388-403.
 
@@ -26,7 +26,7 @@ def re31() -> Problem:
 
     Returns:
         Problem: an instance of the two bar truss design problem
-    '''
+    """
     x_1 = Variable(
         name="x_1",
         symbol="x_1",
@@ -89,7 +89,7 @@ def re31() -> Problem:
 
 
 def re32() -> Problem:
-    '''
+    r"""
     The welded beam design problem.
 
     References:
@@ -106,8 +106,7 @@ def re32() -> Problem:
 
     Returns:
         Problem: an instance of the welded beam design problem
-    '''
-
+    """
     x_1 = Variable(
         name="x_1",
         symbol="x_1",
@@ -193,7 +192,7 @@ def re32() -> Problem:
 
 
 def re33() -> Problem:
-    '''
+    r"""
     The disc brake design problem.
 
     References:
@@ -210,8 +209,7 @@ def re33() -> Problem:
 
     Returns:
         Problem: an instance of the disc brake design problem
-    '''
-
+    """
     x_1 = Variable(
             name="x_1",
             symbol="x_1",
@@ -282,7 +280,7 @@ def re33() -> Problem:
 
 
 def re42() -> Problem:
-    '''
+    r"""
     The conceptual marine design problem.
 
     References:
@@ -300,7 +298,7 @@ def re42() -> Problem:
 
     Returns:
         Problem: an instance of the conceptual marine design problem
-    '''
+    """
     x_1 = Variable(
         name="x_1",
         symbol="x_1",
