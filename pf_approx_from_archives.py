@@ -31,6 +31,8 @@ def calc_pf_approx(problem_id:int, pf_approx_size:int=None) -> None:
 
     counter = 0
 
+    # if reference PF size has not been set, use the default value
+    # for the number of objective functions this problem has
     if pf_approx_size == None:
         sql_prob = '''SELECT obj FROM problems WHERE problem_id = ?'''
         n_obj = query_data(sql_prob, (problem_id,))[0]

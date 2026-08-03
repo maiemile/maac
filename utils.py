@@ -46,6 +46,10 @@ def load_param_config(param:str) -> bool | str:
     param_value = config_parser.get('general', param)
     if param_value == 'None':
         return ""
+    if param_value == 'True':
+        return True
+    if param_value == 'False':
+        return False
     return param_value
 
 
@@ -148,7 +152,6 @@ def get_all_configuration_options() -> list[list]:
     return algos, cxs, mxs
 
 
-# TODO: check the folder indicator_data, and find all suffixes
 def get_default_aggregators() -> list[str]:
     '''
     Returns the default list of aggregators used for exploratory landscape analysis (ELA)
@@ -163,7 +166,6 @@ def get_benchmark_configurations() -> list[str]:
     '''
 
     return ['ibea-SBX-NUM', 'nsga3-SBX-BPM']
-
 
 
 def get_default_pop_sizes() -> dict:

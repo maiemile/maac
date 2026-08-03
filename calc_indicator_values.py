@@ -105,3 +105,7 @@ def do(indicators:list[str]) -> None:
         pool.starmap(calc_ind_val_problem, completed_runs)
         pool.terminate()
         pool.join()
+
+
+if __name__ == "__main__":
+    do(["igd"])

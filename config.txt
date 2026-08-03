@@ -1,4 +1,4 @@
 [general]
-load_models = True
+load_models = False
 database_file = maac.db
 base_path = None
