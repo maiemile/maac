@@ -9,6 +9,10 @@ import utils as util
 from generate_database import query_data, insert_data
 import os
 
+import logging
+logger = logging.getLogger(__name__)
+logging.basicConfig(filename='maac_ind.log', level=logging.INFO)
+
 BASE_PATH = util.load_param_config('base_path')
 
 def calc_ind_val_problem(run_id:int, problem_id:int, indicators:list[str], ind_vals:list[float]) -> None:
@@ -29,10 +33,10 @@ def calc_ind_val_problem(run_id:int, problem_id:int, indicators:list[str], ind_v
     ideal_vector = np.min(pf_approx, axis=0)
     nadir_vector = np.max(pf_approx, axis=0)
 
-    # normalize the PF approximation
+    # normalize the PF approximation TODO: this could be saved separately so it doesn't need to be calculated every time
     normalized_pf_approx = (pf_approx-ideal_vector) / (nadir_vector-ideal_vector)
 
-    # it was already checked that this file exists, but for improved integrity, we use try catch
+    # it was already checked that this file exists, but for increased robustness, we use try catch
     try:
         # fetch the archive if it exists
         path = Path(BASE_PATH + 'archived_pops/' + str(run_id) + '.csv')
@@ -68,6 +72,10 @@ def calc_ind_val_problem(run_id:int, problem_id:int, indicators:list[str], ind_v
     # add run id to the SQL
     values.append(run_id)
     insert_data(sql, [values])
+
+    sql_query = f'''SELECT {indicators[0]} FROM runs WHERE run_id = {run_id}'''
+    res = query_data(sql_query)
+    logger.info(res[0])
 
 
 def do(indicators:list[str]) -> None:

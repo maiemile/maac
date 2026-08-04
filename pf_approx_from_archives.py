@@ -75,9 +75,9 @@ def calc_pf_approx(problem_id:int, pf_approx_size:int=None) -> None:
         for i in range(pf_approx_size-1):
             distances = cdist(pf, chosen, metric='chebyshev').min(axis=1)
             chosen.append(pf[np.argmax(distances)])
-        if i % 100:
-            timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            logger.info(f"{timestamp} | Problem {problem_id} at size {i}")
+            if i % 100 == 0:
+                timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                logger.info(f"{timestamp} | Problem {problem_id} at size {i}")
     # otherwise just use the full PF approximation
     else:
         chosen = pf
