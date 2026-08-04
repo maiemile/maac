@@ -143,17 +143,17 @@ def re32() -> Problem:
     tauMax = 13600
     sigmaMax = 30000
 
-    M = f"{P} * ({L} + (x_2 / 2))"
+    M = f"({P} * ({L} + (x_2 / 2)))"
     R = "Sqrt(((x_2 * x_2) / 4.0) + ((x_1 + x_3) / 2.0)**2)"
-    J = "2 * Sqrt(2) * x_1 * x_2 * ((x_2 * x_2) / 12.0) + ((x_1 + x_3) / 2.0)**2"
+    J = "(2 * Sqrt(2) * x_1 * x_2 * (((x_2 * x_2) / 12.0) + ((x_1 + x_3) / 2.0)**2))"
 
-    tauDashDash = f"({M} * {R}) / {J}"
-    tauDash = f"{P} / (Sqrt(2) * x_1 * x_2)" 
+    tauDashDash = f"(({M} * {R}) / {J})"
+    tauDash = f"({P} / (Sqrt(2) * x_1 * x_2))" 
     tau = f"Sqrt({tauDash} * {tauDash} + ((2 * {tauDash} * {tauDashDash} * x_2) / (2 * {R})) + ({tauDashDash} * {tauDashDash}))"
     sigma = f"(6 * {P} * {L}) / (x_4 * x_3 * x_3)"
-    tmpVar = f"4.013 * {E} * Sqrt((x_3 * x_3 * x_4 * x_4 * x_4 * x_4 * x_4 * x_4) / 36.0) / ({L} * {L})"
-    tmpVar2 = f"(x_3 / (2 * {L})) * Sqrt({E} / (4 * {G}))"
-    PC = f"{tmpVar} * (1 - {tmpVar2})"
+    tmpVar = f"(4.013 * {E} * Sqrt((x_3 * x_3 * x_4 * x_4 * x_4 * x_4 * x_4 * x_4) / 36.0) / ({L} * {L}))"
+    tmpVar2 = f"(x_3 / (2 * {L})) * Sqrt(({E}) / (4 * {G}))"
+    PC = f"({tmpVar} * (1 - ({tmpVar2})))"
 
     f_1 = Objective(
         name="f_1",
@@ -371,7 +371,6 @@ def re42() -> Problem:
 
     #round_trip_miles = "5000.0"
     sea_days = f"((5000.0 / 24.0) * {x_Vk})"
-    #handling_rate = "8000.0"
 
     daily_consumption = f"(0.00456 * {power} + 0.2)"
     #fuel_price = "100.0"
@@ -382,6 +381,7 @@ def re42() -> Problem:
     miscellaneous_DWT = f"2.0 * {DWT}**0.5"
 
     cargo_DWT = f"({DWT} - {fuel_carried} - {miscellaneous_DWT})"
+    #handling_rate = "8000.0"
     port_days = f"2.0 * (({cargo_DWT} / 8000.0) + 0.5)"
     RTPA = f"350.0 / ({sea_days} + {port_days})"
 
