@@ -11,7 +11,6 @@ import os
 
 BASE_PATH = util.load_param_config('base_path')
 
-
 def calc_ind_val_problem(run_id:int, problem_id:int, indicators:list[str], ind_vals:list[float]) -> None:
     '''
     Calculates the indicator values of the given run. Only performs calculations if the indicator value is None.
@@ -92,7 +91,9 @@ def do(indicators:list[str]) -> None:
     # by identifying if archives have been saved for them
     completed_runs = []
     for row in data:
-        if os.path.isfile(Path(BASE_PATH + 'archived_pops/' + str(row[0]) + '.csv')):
+        # only include the run if the corresponding archive and reference PF exist
+        if (os.path.isfile(Path(BASE_PATH + 'archived_pops/' + str(row[0]) + '.csv')) 
+            and os.path.isfile(Path(BASE_PATH + 'approx_pfs/' + str(row[1]) + '.csv'))):
             new_row = list(row)
 
             # if there is at least one missing indicator value, add the row to the list
