@@ -32,6 +32,7 @@ if __name__ == "__main__":
 
     # Make sure the folders where the figures are saved exist
     # if not, create the corresponding folders
+    # TODO: use BASE_PATH in the file paths here
     paths = ["archived_pops", "archived_final_pops", "approx_pfs", os.path.join("figures", "confusion_matrices"), 
              os.path.join("figures", "perf_prof")]
     for path in paths:

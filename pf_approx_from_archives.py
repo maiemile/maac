@@ -11,6 +11,7 @@ from desdeo.tools.non_dominated_sorting import non_dominated_merge
 import polars as pl
 import utils as util
 from generate_database import query_data
+from datetime import datetime
 
 import logging
 logger = logging.getLogger(__name__)
@@ -60,8 +61,9 @@ def calc_pf_approx(problem_id:int, pf_approx_size:int=None) -> None:
             pf = pl.concat([df1.filter(mask1), df2.filter(mask2)])
             pf = np.array(pf)
             counter += 1
-            if counter % 10 == 0:
-                logger.info(f"Problem {problem_id} at archive {counter}/{len(runs)}")
+            if counter % 100 == 0:
+                timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                logger.info(f"{timestamp} | Problem {problem_id} at archive {counter}/{len(runs)}")
         # unless there is nothing to merge with, then set the first archive as the initial non-dominated population
         except:
             pf = pf2
@@ -73,6 +75,9 @@ def calc_pf_approx(problem_id:int, pf_approx_size:int=None) -> None:
         for i in range(pf_approx_size-1):
             distances = cdist(pf, chosen, metric='chebyshev').min(axis=1)
             chosen.append(pf[np.argmax(distances)])
+        if i % 100:
+            timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            logger.info(f"{timestamp} | Problem {problem_id} at size {i}")
     # otherwise just use the full PF approximation
     else:
         chosen = pf
@@ -80,6 +85,7 @@ def calc_pf_approx(problem_id:int, pf_approx_size:int=None) -> None:
     # save the PF approximation to a file
     path = Path(BASE_PATH + 'approx_pfs/' + str(problem_id) + '.csv')
     util.write_to_csv(path, chosen)
+    logger.info(f"PF of problem {problem_id} saved")
 
 
 def do() -> None:
