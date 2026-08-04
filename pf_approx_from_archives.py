@@ -12,6 +12,10 @@ import polars as pl
 import utils as util
 from generate_database import query_data
 
+import logging
+logger = logging.getLogger(__name__)
+logging.basicConfig(filename='maac_pf.log', level=logging.INFO)
+
 ######################################################
 
 BASE_PATH = util.load_param_config('base_path')
@@ -36,7 +40,6 @@ def calc_pf_approx(problem_id:int, pf_approx_size:int=None) -> None:
     if pf_approx_size == None:
         sql_prob = '''SELECT obj FROM problems WHERE problem_id = ?'''
         n_obj = query_data(sql_prob, (problem_id,))[0]
-        print(n_obj)
         pf_approx_size = util.get_default_ref_pf_size(n_obj)
 
     pf = []
@@ -58,14 +61,12 @@ def calc_pf_approx(problem_id:int, pf_approx_size:int=None) -> None:
             pf = np.array(pf)
             counter += 1
             if counter % 10 == 0:
-                print(counter)
+                logger.info(f"Problem {problem_id} at archive {counter}/{len(runs)}")
         # unless there is nothing to merge with, then set the first archive as the initial non-dominated population
         except:
             pf = pf2
 
-    print('--------------------')
-    print(len(pf), problem_id)
-    print('--------------------')
+    logger.info(f"Problem {problem_id} has a reference PF of size {len(pf)}")
     # if PF approximation is too large, perform distance-based subset selection
     if len(pf) > pf_approx_size:
         chosen = [pf[0]]
