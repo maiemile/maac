@@ -39,7 +39,7 @@ def get_best_config_by_problem(indicator:str="igd") -> list[tuple]:
     FROM (SELECT AVG(r.{indicator}) AS average_igd, p.problem_id AS problem, e.ea_id AS EA
     FROM runs r, problems p, eas e 
     WHERE p.problem_id = r.problem_id
-    AND r.ea_id = e.ea_id GROUP BY p.name, e.ea_id)
+    AND r.ea_id = e.ea_id GROUP BY p.problem_id, e.ea_id)
     GROUP BY problem'''
 
     res = query_data(sql)

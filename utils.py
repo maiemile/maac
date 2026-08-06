@@ -130,14 +130,34 @@ def get_problem_object(prob_name:str, n_obj:int, n_var:int) -> Problem:
     return problem_obj
 
 
-def get_test_problems() -> list[str]:
+def get_test_problems(test_problems:list[str | int]=[]) -> list[int]:
     '''
     Returns a list of all test problems (only string format)
     '''
-    test_problems = ['dtlz1-4obj', 'dtlz2-3obj', 'dtlz3-9obj', 'dtlz5-6obj', 'dtlz7-9obj', 
-                         'wfg1-4obj', 'wfg3-3obj', 'wfg4-9obj', 'wfg6-6obj', 'wfg8-9obj'
-                         , 're31-3obj', 're32-3obj', 're33-3obj', 're34-3obj', 're37-3obj']
-    return test_problems
+    #test_problems = ['dtlz1-4obj', 'dtlz2-3obj', 'dtlz3-9obj', 'dtlz5-6obj', 'dtlz7-9obj', 
+    #                     'wfg1-4obj', 'wfg3-3obj', 'wfg4-9obj', 'wfg6-6obj', 'wfg8-9obj'
+    #                     , 're31-3obj', 're32-3obj', 're33-3obj', 're34-3obj', 're37-3obj']
+    
+    from generate_database import query_data
+
+    test_problems_fixed = []
+    for problem in test_problems:
+        # problems given in string or integer format must be handled differently
+        if isinstance(problem, str):
+            sql = '''SELECT problem_id FROM problems WHERE name = ?'''
+            res = query_data(sql, (problem,))
+            if len(res) == 1:
+                test_problems_fixed.append(res[0])
+            elif len(res) > 1:
+                for prob in res:
+                    test_problems_fixed.append(prob[0])
+        elif isinstance(problem, int):
+            test_problems_fixed.append(problem)
+        else:
+            pass
+
+    # TODO: might make sense to remove duplicates and sort the problem ids
+    return test_problems_fixed
 
 
 def get_all_configuration_options() -> list[list]:

@@ -61,7 +61,7 @@ def calc_pf_approx(problem_id:int, pf_approx_size:int=None) -> None:
             pf = pl.concat([df1.filter(mask1), df2.filter(mask2)])
             pf = np.array(pf)
             counter += 1
-            if counter % 100 == 0:
+            if counter % 50 == 0:
                 timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                 logger.info(f"{timestamp} | Problem {problem_id} at archive {counter}/{len(runs)}")
         # unless there is nothing to merge with, then set the first archive as the initial non-dominated population
