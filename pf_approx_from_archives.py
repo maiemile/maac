@@ -48,38 +48,29 @@ def calc_pf_approx(problem_id:int, pf_approx_size:int=None) -> None:
         run_id = run[0]
         # load the archived non-dominated solutions of the run if they exist
         try:
-            path = Path(BASE_PATH + 'archived_pops/' + str(run_id) + '.csv')
+            path = Path(BASE_PATH + 'archives_temp/' + str(run_id) + '.csv')
             pf2 = np.array(pd.read_csv(path))
         except:
             continue
 
-        # if the archive is too large, perform subset selection on it
-        max_archive_size = int(pf_approx_size/4)
-        if len(pf2) > max_archive_size:
-            calc_pf = [pf2[0]]
-            for i in range(max_archive_size-1):
-                distances = cdist(pf2, calc_pf, metric='chebyshev').min(axis=1)
-                calc_pf.append(pf2[np.argmax(distances)])
-                if i % 100 == 0:
-                    timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-                    logger.info(f"{timestamp} | Problem {problem_id} decreasing archive size at {i}/{max_archive_size}")
-        else:
-            calc_pf = pf2
-
         try:
         # perform non-dominated merge with the current PF approximation
-            mask1, mask2 = non_dominated_merge(pf, calc_pf)
+            mask1, mask2 = non_dominated_merge(pf, pf2)
             df1 = pl.from_numpy(pf)
-            df2 = pl.from_numpy(calc_pf)
+            df2 = pl.from_numpy(pf2)
             pf = pl.concat([df1.filter(mask1), df2.filter(mask2)])
             pf = np.array(pf)
             counter += 1
-            if counter % 50 == 0:
+            if counter % 25 == 0:
                 timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                 logger.info(f"{timestamp} | Problem {problem_id} at archive {counter}/{len(runs)}")
         # unless there is nothing to merge with, then set the first archive as the initial non-dominated population
         except:
-            pf = calc_pf
+            pf = pf2
+
+    # save the temporary PF approximation to a file
+    path = Path(BASE_PATH + 'approx_pfs_temp/' + str(problem_id) + '.csv')
+    util.write_to_csv(path, np.array(pf))
 
     logger.info(f"Problem {problem_id} has a reference PF of size {len(pf)}")
     # if PF approximation is too large, perform distance-based subset selection
@@ -88,7 +79,7 @@ def calc_pf_approx(problem_id:int, pf_approx_size:int=None) -> None:
         for i in range(pf_approx_size-1):
             distances = cdist(pf, chosen, metric='chebyshev').min(axis=1)
             chosen.append(pf[np.argmax(distances)])
-            if i % 100 == 0:
+            if i % 50 == 0:
                 timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                 logger.info(f"{timestamp} | Problem {problem_id} at size {i}/{pf_approx_size}")
     # otherwise just use the full PF approximation
