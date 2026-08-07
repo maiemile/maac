@@ -53,11 +53,20 @@ def calc_pf_approx(problem_id:int, pf_approx_size:int=None) -> None:
         except:
             continue
 
+        # if the archive is too large, perform subset selection on it
+        if len(pf2) > pf_approx_size/4:
+            calc_pf = [pf2[0]]
+            for i in range(pf_approx_size/4-1):
+                distances = cdist(pf2, calc_pf, metric='chebyshev').min(axis=1)
+                calc_pf.append(pf2[np.argmax(distances)])
+        else:
+            calc_pf = pf2
+
         try:
         # perform non-dominated merge with the current PF approximation
-            mask1, mask2 = non_dominated_merge(pf, pf2)
+            mask1, mask2 = non_dominated_merge(pf, calc_pf)
             df1 = pl.from_numpy(pf)
-            df2 = pl.from_numpy(pf2)
+            df2 = pl.from_numpy(calc_pf)
             pf = pl.concat([df1.filter(mask1), df2.filter(mask2)])
             pf = np.array(pf)
             counter += 1
@@ -66,7 +75,7 @@ def calc_pf_approx(problem_id:int, pf_approx_size:int=None) -> None:
                 logger.info(f"{timestamp} | Problem {problem_id} at archive {counter}/{len(runs)}")
         # unless there is nothing to merge with, then set the first archive as the initial non-dominated population
         except:
-            pf = pf2
+            pf = calc_pf
 
     logger.info(f"Problem {problem_id} has a reference PF of size {len(pf)}")
     # if PF approximation is too large, perform distance-based subset selection

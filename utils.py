@@ -1,5 +1,6 @@
 # Code by @maiemile
 
+import math
 import matplotlib.pyplot as plt
 import configparser
 from pathlib import Path
@@ -13,6 +14,7 @@ from pathlib import Path
 from desdeo.problem.testproblems import re_problem as re
 from desdeo.problem import Problem
 from desdeo.problem.external import pymoo_provider
+from sklearn.metrics import (confusion_matrix ,ConfusionMatrixDisplay)
 
 
 class ExperimentalSetup():
@@ -80,6 +82,33 @@ def create_igd_array_and_dict(file_name:str) -> tuple[list[list], dict, list[lis
             igd_array_regr.append([problem, split_config[2], split_config[3], split_config[4], igd, igd_plus])
 
     return igd_array, igd_dict, igd_array_regr
+
+
+def create_confusion_matrices(y_test, y_pred_test, model_name:str) -> None:
+    '''
+    Creates a separate confusion matrix for each output. 
+    The confusion matrices are saved in a folder.
+    '''
+    # Confusion matrix for each output
+    params = len(y_test[0])
+    fig, axes = plt.subplots(math.ceil(params/3), 3, figsize=(12,4*math.ceil(params/3)))
+    for j in range(params):
+        labels = np.unique([y_test[:,j], y_pred_test[:,j]])
+        cm = confusion_matrix(y_test[:, j], y_pred_test[:, j], labels=labels)
+        print(cm)
+        disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=labels)
+        disp.plot(ax=axes[j], colorbar=False)
+
+    titles = ['Algorithm', 'Crossover operator', 'Mutation operator']
+    for i in range(params):
+        axes[i].set_title(titles[i])
+        if i % 3 != 0:
+            axes[i].set_ylabel('')
+        if i < params-3:
+            axes[i].set_xlabel('')
+    
+    plt.savefig(f'figures\\confusion_matrices\\{model_name}_regr_database_test.pdf')
+    plt.show()
 
 
 def get_problem_instances() -> list[list]:
