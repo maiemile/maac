@@ -54,11 +54,15 @@ def calc_pf_approx(problem_id:int, pf_approx_size:int=None) -> None:
             continue
 
         # if the archive is too large, perform subset selection on it
-        if len(pf2) > pf_approx_size/4:
+        max_archive_size = int(pf_approx_size/4)
+        if len(pf2) > max_archive_size:
             calc_pf = [pf2[0]]
-            for i in range(pf_approx_size/4-1):
+            for i in range(max_archive_size-1):
                 distances = cdist(pf2, calc_pf, metric='chebyshev').min(axis=1)
                 calc_pf.append(pf2[np.argmax(distances)])
+                if i % 100 == 0:
+                    timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                    logger.info(f"{timestamp} | Problem {problem_id} decreasing archive size at {i}/{max_archive_size}")
         else:
             calc_pf = pf2
 
@@ -86,7 +90,7 @@ def calc_pf_approx(problem_id:int, pf_approx_size:int=None) -> None:
             chosen.append(pf[np.argmax(distances)])
             if i % 100 == 0:
                 timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-                logger.info(f"{timestamp} | Problem {problem_id} at size {i}")
+                logger.info(f"{timestamp} | Problem {problem_id} at size {i}/{pf_approx_size}")
     # otherwise just use the full PF approximation
     else:
         chosen = pf
