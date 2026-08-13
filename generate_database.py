@@ -4,6 +4,8 @@ import sqlite3
 import itertools
 import re
 import utils as util
+import pandas as pd
+import numpy as np
 
 # TODO: when new parameter options are given, create new columns, unique must be updated
 
@@ -17,6 +19,37 @@ def get_number_of_rows(table:str) -> int:
     sql = f'''SELECT COUNT(1) FROM {table}'''
     res = query_data(sql)
     return res[0]
+
+
+def get_median_by_config_and_problem(problem_id:int, ea_id:int, indicator:str="igd"):
+    sql = f'''SELECT AVG({indicator})
+            FROM (SELECT {indicator}
+              FROM runs
+              WHERE problem_id = {problem_id} AND ea_id = {ea_id}
+              ORDER BY {indicator}
+              LIMIT 2 - (SELECT COUNT(*) FROM runs WHERE problem_id = {problem_id} AND ea_id = {ea_id}) % 2    -- odd 1, even 2
+              OFFSET (SELECT (COUNT(*) - 1) / 2
+                      FROM runs WHERE problem_id = {problem_id} AND ea_id = {ea_id}))'''
+    res_l = query_data(sql)
+    return res_l[0]
+
+
+def get_best_config_by_median(indicator:str="igd"):
+
+    # temporary solution for calculation the configuration with the best median by problem
+    res = []
+    for i in range(1,73): # TODO: find the existing ea_ids instead
+        res_prob = []
+        for j in range(1,49): # TODO: find the existing problem_ids instead
+            res_l = get_median_by_config_and_problem(i, j, indicator)
+            if res_l == None:
+                res_prob.append(99999999)
+            else:
+                res_prob.append(res_l)
+        # add +1 to argmax to get the ID (which start from 1)
+        res.append([np.argmin(np.array(res_prob))+1, np.min(np.array(res_prob))])
+    
+    return res
 
 
 def get_average_indicator(indicator:str="igd") -> list[tuple]:
@@ -44,6 +77,25 @@ def get_best_config_by_problem(indicator:str="igd") -> list[tuple]:
 
     res = query_data(sql)
     return res
+
+
+def get_best_configs_dictionary(indicator:str="igd") -> dict:
+    data = get_best_config_by_problem(indicator)
+    data_dict = {}
+    for row in data:
+        data_dict[row[0]] = row[1:]
+
+    return data_dict
+
+
+def get_eas_dictionary() -> dict:
+    sql = '''SELECT * FROM eas'''
+    ea_dict = {}
+    data = query_data(sql)
+    for row in data:
+        ea_dict[row[0]] = row[1:]
+
+    return ea_dict
 
 
 def check_key(key:str) -> None:

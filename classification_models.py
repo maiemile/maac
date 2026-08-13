@@ -1,121 +1,80 @@
-# code by @maiemile
+import utils as util
 
+from generate_database import query_data, get_best_configs_dictionary, get_eas_dictionary
+
+import sqlite3
+import pandas as pd
+import numpy as np
+import xgboost as xgb
 import pickle
 import os
-import numpy as np
-import pandas as pd
-import utils as util
-import xgboost as xgb
-import matplotlib.pyplot as plt
-from pathlib import Path
-import scienceplots
-plt.style.use(['science','no-latex'])
 
+from sklearn.model_selection import KFold, GridSearchCV
+from sklearn.feature_selection import SelectKBest, f_classif
+from sklearn.metrics import f1_score, make_scorer
+from sklearn.preprocessing import StandardScaler, LabelEncoder
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.multioutput import MultiOutputClassifier
-from sklearn.model_selection import cross_val_score, KFold, train_test_split, GridSearchCV
-from sklearn.metrics import f1_score, confusion_matrix, make_scorer, ConfusionMatrixDisplay
 from sklearn.linear_model import LogisticRegression
-from sklearn.preprocessing import LabelEncoder, StandardScaler
-from sklearn.feature_selection import SelectKBest, f_classif
 from sklearn.neural_network import MLPClassifier
-from sklearn import tree
-from matplotlib.colors import to_rgb
-
-# all the problems instances
-problem_instances = util.get_problem_instances()
-test_problems = util.get_test_problems()
 
 # Fetch the information on whether to load pre-existing models (True) or train new ones (False)
 load_models = bool(util.load_param_config('load_models'))
+# Load the filename of the database and the base path
+database = util.load_param_config('database_file')
 
-
-def load_response_variables(problems_to_ignore: list[str]) -> list[list[str]]:
+def get_model_data() -> dict:
     '''
-    Loads best configuration data as a list. Each row contains a problem and the best configuration for that problem.
-    '''
-    Y = []
-
-    # load the response variables (the optimal configuration for each problem)
-    with open('indicator_data\\best_regular_igd_values.txt', 'r') as file:
-        for line in file:
-            split_line = line.split() 
-            problem = split_line[0]
-            # ignore the troublesome problems
-            if problem in problems_to_ignore:
-                continue
-            configuration = split_line[1]
-            split_config = configuration.split('-')
-            Y.append([problem] + split_config)
-
-    return Y
-
-
-def preprocess_data(df_original: pd.DataFrame) -> tuple[pd.DataFrame,pd.DataFrame,pd.DataFrame,pd.DataFrame,pd.DataFrame, list[LabelEncoder]]:
-    '''
-    The given dataframe is preprocessed. Data is cleaned from empty and infinite values
-    and variables are encoded or scaled depending on the type of the variables.
-    Train/test split is performed.
+    Returns a dictionary of the default machine learning models and their parameter grids for hyperparameter optimization.
     '''
 
-    # Split the data into X and y (input and response variables)
-    y_cols_original = ['algo', 'crossover', 'mutation']
-    y = df_original[y_cols_original]
-    y_cols = y_cols_original + ['problem', 'ic.eps_ratio_MIN', 'ic.eps_ratio_AVG', 'ic.eps_ratio_SD']
+    # hyperparameter optimization for the machine learning models => split into train/val + test sets
+    # and evaluate the best model with the test set to get a more accurate representation of the accuracy
+    clf_dt = MultiOutputClassifier(DecisionTreeClassifier(random_state=42))
+    clf_rf = MultiOutputClassifier(RandomForestClassifier(random_state=42))
+    clf_lr = MultiOutputClassifier(LogisticRegression(random_state=42))
+    clf_xg = MultiOutputClassifier(xgb.XGBClassifier(random_state=42))
+    clf_nn = MultiOutputClassifier(MLPClassifier(random_state=42, max_iter=500))
 
-    # Drop the following column because it contains several -infinite features
-    df = df_original.drop(columns=y_cols)
+    param_grid_rf = {
+        #"estimator__n_estimators": [10,50,100,200],
+        #"estimator__criterion": ["gini", "entropy", "log_loss"],
+        #"estimator__max_depth": [None, 2,4,7],
+        "estimator__max_features": [None, "sqrt", "log2"],
+    }
+    param_grid_dt = {
+        #"estimator__criterion": ["gini", "entropy", "log_loss"],
+        #"estimator__max_depth": [None, 3,5,10],
+        #"estimator__max_features": [None, "sqrt", "log2"],
+        "estimator__splitter": ["best", "random"]
+    }
+    param_grid_lr = {
+        "estimator__l1_ratio": [0, 0.25, 0.5, 0.75, 1],
+        "estimator__solver": ['lbfgs','sag', 'saga']
+    }
+    param_grid_xg = {
+        "estimator__max_depth": [6,8,10,12],
+        "estimator__subsample": [0.5, 0.75, 1],
+        "estimator__eta": [0.01, 0.1, 0.3, 0.6],
+        "estimator__n_estimators": [10,50,100,200],
+    }
+    param_grid_nn = {
+        "estimator__hidden_layer_sizes": [(30,10,6), (20,12,4), (50, 30, 10, 4), (16,6), (12,4)],
+        "estimator__solver": ["adam", "lbfgs"],
+        "estimator__learning_rate": ["constant", "adaptive"],
+        "estimator__activation": ["logistic", "relu"]
+    }
 
-    # LabelEncoder is fine for converting the response variables in classification models
-    # even if they are categorical and unordinal
-    # each output requires a separate encoder as they have different value sets
-    cols = []
-    encs = []
-    for col in y_cols_original:
-        enc = LabelEncoder().fit(y[col])
-        encs.append(enc)
-
-        y1_enc = enc.transform(y[col])
-        cols.append(y1_enc)
-
-    y = pd.DataFrame(np.column_stack(cols))
-
-    # TODO: automatically remove columns with null/infinite values
-    # print all columns with null values
-    nan_cols = [i for i in df.columns if df[i].isnull().any()]
-    for value in nan_cols:
-        print(value)
-
-    # dataset contains no nan values
-    print(df.isnull().values.any())
-
-    # (negative) infinite values have been removed
-    infs = (df == -np.inf).any(axis=0)
-    for i in range(len(infs)):
-        if infs[i] == True:
-            print(i, infs[i])
-
-    infs = (df == np.inf).any(axis=0)
-    for i in range(len(infs)):
-        if infs[i] == True:
-            print(i, infs[i])
-
-    # Scale the input data to follow Gaussian distribution with a mean of 0 and standard deviation of 1
-    scaler = StandardScaler()
-    column_names = list(df)
-    X_temp = scaler.fit_transform(df)
-    X_temp = pd.DataFrame(X_temp, columns=column_names)
-
-    # split the data into train and test sets based on a manually picked test problem set
-    test_indexes = df_original[df_original['problem'].str.contains('|'.join(test_problems), na=False)].index
-
-    X_train = X_temp.drop(test_indexes)
-    X_test = X_temp.iloc[test_indexes]
-    y_train = y.drop(test_indexes)
-    y_test = y.iloc[test_indexes]
-
-    return X_train, X_test, y_train, y_test, y, encs
+    model_dict = {
+        "Random forest": [clf_rf, param_grid_rf], 
+        "Decision tree": [clf_dt, param_grid_dt], 
+        #"Logistic regression": [clf_lr, param_grid_lr],
+        #"XGBoost": [clf_xg, param_grid_xg],
+        #"Neural network": [clf_nn, param_grid_nn]
+        }
+    
+    return model_dict
 
 
 def multioutput_macro_f1(y_true, y_pred) -> float:
@@ -132,7 +91,7 @@ def multioutput_macro_f1(y_true, y_pred) -> float:
     return float(np.mean(per_output))
 
 
-def select_features(y, X_train, X_test, y_train):
+def select_features(X_train, y_train) -> list[str]:
     '''
     Does feature selection according to feature importance.
     20 most important features are selected for each response variable
@@ -156,22 +115,20 @@ def select_features(y, X_train, X_test, y_train):
             raise Exception('No models found. Feature names could not be loaded.')
         
         # the following code is used when wanting to access the features used for a model
-        with open(f'models\{modelname}', 'rb') as f:
+        with open(f'models\{modelname}_classifier_v2.pkl', 'rb') as f:
             clf2 = pickle.load(f)
         for clf in clf2.estimators_:
             features = clf.feature_names_in_
             break
 
-        X_train = X_train[features]
-        X_test = X_test[features]
+        return features
 
     else:
         selected_features = []
-        selected_feature_indexes = []
 
         # Select 20 most important features for each response variable separately
         # and concatenate the chosen features
-        for i in range(len(y.columns)):
+        for i in range(len(y_train.columns)):
             selector = SelectKBest(f_classif, k=20)
             X_new = selector.fit_transform(X_train, y_train.iloc[:,i])
 
@@ -183,150 +140,140 @@ def select_features(y, X_train, X_test, y_train):
              ['Feat_names','F_Scores'])
             ns_df_sorted = ns_df.sort_values(['F_Scores','Feat_names'], ascending =
              [False, True])
-            print(ns_df_sorted)
+            #print(ns_df_sorted)
 
-            cols_idxs = list(selector.get_support(indices=True))
             columns = list(selector.get_feature_names_out())
 
             selected_features = selected_features + columns
-            selected_feature_indexes = selected_feature_indexes + cols_idxs
-            print(cols_idxs)
-            print(columns)
 
         # remove duplicates
         union_list = list(set(selected_features))
-        union_list_idx = list(set(selected_feature_indexes))
 
-        print(union_list)
-        print(union_list_idx)
-        print(len(union_list))
-        print(len(union_list_idx))
-
-        # update the input variable data to only contain selected features
-        X_train = X_train[union_list]
-        X_test = X_test[union_list]
-
-    return X_train, X_test
+        return union_list
 
 
-def get_model_data() -> dict:
+def prepare_data(df, test_problems, scaler, indicator):
     '''
-    Returns a dictionary of the default machine learning models and their parameter grids for hyperparameter optimization.
+    Does data preprocessing. Missing and unrealistic values are handled. 
+    Categorical variables are encoded, numerical variables are scaled and train/test split is performed.
+    Features are selected based on importance or loaded from existing models.
     '''
 
-    # hyperparameter optimization for the machine learning models => split into train/val + test sets
-    # and evaluate the best model with the test set to get a more accurate representation of the accuracy
-    clf_dt = MultiOutputClassifier(DecisionTreeClassifier(random_state=42))
-    clf_rf = MultiOutputClassifier(RandomForestClassifier(random_state=42))
-    clf_lr = MultiOutputClassifier(LogisticRegression(random_state=42))
-    clf_xg = MultiOutputClassifier(xgb.XGBClassifier(random_state=42))
-    clf_nn = MultiOutputClassifier(MLPClassifier(random_state=42, max_iter=500))
+    # Remove all columns with missing or infinite values
+    df = df.replace([np.inf, -np.inf], np.nan)
+    df = df.dropna(axis=1)
 
-    param_grid_rf = {
-        "estimator__n_estimators": [10,50,100,200],
-        "estimator__criterion": ["gini", "entropy", "log_loss"],
-        "estimator__max_depth": [None, 2,4,7],
-        "estimator__max_features": [None, "sqrt", "log2"],
-    }
-    param_grid_dt = {
-        "estimator__criterion": ["gini", "entropy", "log_loss"],
-        "estimator__max_depth": [None, 3,5,10],
-        "estimator__max_features": [None, "sqrt", "log2"],
-        "estimator__splitter": ["best", "random"]
-    }
-    param_grid_lr = {
-        "estimator__l1_ratio": [0, 0.25, 0.5, 0.75, 1],
-        "estimator__solver": ['lbfgs','sag', 'saga']
-    }
-    param_grid_xg = {
-        "estimator__max_depth": [6,8,10,12],
-        "estimator__subsample": [0.5, 0.75, 1],
-        "estimator__eta": [0.01, 0.1, 0.3, 0.6],
-        "estimator__n_estimators": [10,50,100,200],
-    }
-    param_grid_nn = {
-        "estimator__hidden_layer_sizes": [(30,10,6), (20,12,4), (50, 30, 10, 4), (16,6), (12,4)],
-        "estimator__solver": ["adam", "lbfgs"],
-        "estimator__learning_rate": ["constant", "adaptive"],
-        "estimator__activation": ["logistic", "relu"]
-    }
+    y_cols = util.get_param_names()
 
-    model_dict = {
-        "Random forest": [clf_rf, param_grid_rf], 
-        "Decision tree": [clf_dt, param_grid_dt], 
-        "Logistic regression": [clf_lr, param_grid_lr],
-        "XGBoost": [clf_xg, param_grid_xg],
-        "Neural network": [clf_nn, param_grid_nn]
-        }
-    
-    return model_dict
+    # scale or encode train data depending on if the feature is numerical or categorical
+    categorical_vars = df[y_cols]
+    cols = []
+    encs = []
+    for col in y_cols:
+        enc = LabelEncoder().fit(categorical_vars[col])
+        encs.append(enc)
+
+        y1_enc = enc.transform(categorical_vars[col])
+        cols.append(y1_enc)
+    y = pd.DataFrame(np.column_stack(cols), columns=y_cols)
+
+    # replace the response variable columns with the encoded values
+    df = df.drop(y_cols, axis=1)
+    df = pd.concat([df, y], axis=1)
+    print(df.head())
+
+    # train/test split
+    df_test = df[df['problem_id'].isin(test_problems)]
+    df = df.drop(df[df['problem_id'].isin(test_problems)].index)
+
+    # remove unnecessary features
+    try:
+        problem_data = ['problem_id', 'seed', 'ea_id', 'name', indicator]
+        df = df.drop(problem_data, axis=1)
+    except:
+        problem_data = ['problem_id', 'seed', 'ea_id', indicator]
+        df = df.drop(problem_data, axis=1)  
+
+    # save the data related to the run in a separate dataframe
+    df_test_data = df_test[problem_data]
+
+    # reset the index to be in line with the X_test dataframe
+    df_test_data.reset_index(drop=True, inplace=True)
+    df_test = df_test.drop(problem_data, axis=1)
+
+    y_train = df[y_cols]
+    df_to_normalize = df.drop(columns=y_cols)
+    # fix binary columns TODO: change the format of these columns in the database / store them as floats in ELA calculations
+    df_to_normalize = util.convert_data(df_to_normalize)
+    X_train = scaler.fit_transform(df_to_normalize)
+
+    y_test = df_test[y_cols]
+    df_to_normalize = df_test.drop(columns=y_cols)
+    # fix binary columns 
+    df_to_normalize = util.convert_data(df_to_normalize)
+    X_test = scaler.transform(df_to_normalize)    
+
+    column_names = list(df_to_normalize)
+    X_train = pd.DataFrame(X_train, columns=column_names)
+    X_test = pd.DataFrame(X_test, columns=column_names)
+
+    selected_features = select_features(X_train, y_train)
+
+    X_train = X_train[selected_features]
+    X_test = X_test[selected_features]
+
+    return [X_train, X_test, y_train, y_test], df_test_data, encs
 
 
-def train_models(model_dict:dict, scorer, X_train, y_train):
+def train_models(model:str, model_data, scorer, data):
     '''
-    Classification models are trained or loaded depending on the value of load_models.
-    The training procedure includes cross-validation for hyperparameter optimization.
-    '''
-
-    # loop through every model and either load or train them 
-    best_estimators = {}
-    best_params = {}
-    for model, model_data in model_dict.items():
-        if load_models:
-            #load the model
-            with open(f'models\\{model}_classifier_v2.pkl', 'rb') as f:
-                clf2 = pickle.load(f)
-
-            best_estimators[model] = clf2
-
-        else:
-            print("="*10 + model + "="*10)
-            classifier = model_data[0]
-            param_grid = model_data[1]
-
-            # Use cross-validation as the dataset is small
-            kfold = KFold(n_splits=5, shuffle=True, random_state=42)
-
-            # grid search is fine with a small parameter grid
-            # TODO: allow other types of cross-validation?
-            grid_search = GridSearchCV(
-                estimator=classifier,
-                param_grid=param_grid,
-                cv=kfold,
-                scoring=scorer,   # macro F1 averaged across folds
-                verbose=1
-            )
-            grid_search.fit(X_train, y_train)
-
-            print("Best parameters:", grid_search.best_params_)
-            print("Best CV score (macro F1):", grid_search.best_score_)
-
-            #save the model
-            with open(f'models\\{model}_classifier_v2.pkl','wb') as f:
-                pickle.dump(grid_search.best_estimator_,f)
-
-            best_estimators[model] = grid_search.best_estimator_
-            best_params[model] = grid_search.best_params_
-
-    return best_estimators
-
-
-def evaluate_models(model_name:str, best_model, enc, X_test, y_test, y):
-    '''
-    The model prediction on the test data are evaluated. Confusion matrices of the 
-    predictions compared to true values are created and saved.
+    Train the hyperparameters of the given model using cross-validation.
+    Calculates some relevant metrics and returns the predictions for further analysis.
     '''
 
-    print("="*10 + model_name + "="*10)
+    X_train, X_test, y_train, y_test = data
+    if load_models:
+        #load the model
+        with open(f'models\\{model}_classifier_v2.pkl', 'rb') as f:
+            clf2 = pickle.load(f)
+        best_estimator = clf2
+    else:
+        print("="*10 + model + "="*10)
+        classifier = model_data[0]
+        param_grid = model_data[1]
+
+        # Use cross-validation as the dataset is small
+        kfold = KFold(n_splits=2, shuffle=True, random_state=42)
+
+        # grid search is fine with a small parameter grid
+        # TODO: allow other types of cross-validation?
+        grid_search = GridSearchCV(
+            estimator=classifier,
+            param_grid=param_grid,
+            cv=kfold,
+            scoring=scorer,   # macro F1 averaged across folds
+            verbose=1
+        )
+        grid_search.fit(X_train, y_train)
+        print("Best parameters:", grid_search.best_params_)
+        print("Best CV score (macro F1):", grid_search.best_score_)
+
+        #save the model
+        with open(f'models\\{model}_classifier_v2.pkl','wb') as f:
+            pickle.dump(grid_search.best_estimator_,f)
+
+        best_estimator = grid_search.best_estimator_
+
+    print("="*10 + model + "="*10)
     
     # Use the best model based on grid search to predict the test set response variables
-    y_pred_test = best_model.predict(X_test)
+    y_pred_test = best_estimator.predict(X_test)
 
     # Calculate the metrics
     per_output_f1 = [f1_score(y_test.iloc[:, i], y_pred_test[:, i], average='macro', zero_division=0)
-                     for i in range(y.shape[1])]
+                     for i in range(y_test.shape[1])]
     # Compute per-output F1 (weighted to account for class imbalance, especially in algorithm selection)
-    f1_per_output_w = [f1_score(y_test.iloc[:, i], y_pred_test[:, i], average='weighted') for i in range(y.shape[1])]
+    f1_per_output_w = [f1_score(y_test.iloc[:, i], y_pred_test[:, i], average='weighted') for i in range(y_test.shape[1])]
     macro_avg_f1 = np.mean(per_output_f1)
     weighted_avg_f1 = np.mean(f1_per_output_w)
     exact_match = np.mean(np.all(y_pred_test == y_test, axis=1))
@@ -337,44 +284,6 @@ def evaluate_models(model_name:str, best_model, enc, X_test, y_test, y):
     print("Test macro average F1:", np.round(macro_avg_f1, 3))
     print("Test weighted average F1:", np.round(weighted_avg_f1, 3))
     print("Test exact match accuracy:", np.round(exact_match, 3))
-
-    # Confusion matrix or each output
-    encs = enc
-    fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(12,4))
-    axes = [ax1, ax2, ax3]
-    for j in range(y.shape[1]):
-        cm = confusion_matrix(y_test.iloc[:, j], y_pred_test[:, j])
-        print(cm)
-        # A "dumb" way to deal with rvea not appearing in the test set or predictions
-        # TODO: needs to be improved to handle missing predictions
-        if j != 0:
-            if j == 1:
-                labels = [r"BLX-$\alpha$", "LX", "SBX", "SAX"]
-            else:
-                labels = encs[j].inverse_transform(best_model.classes_[j])
-            disp = ConfusionMatrixDisplay(confusion_matrix=cm,
-                              display_labels=labels)
-        else:
-            y_pred_test_enc = enc[0].inverse_transform(y_pred_test[:,0])
-            if "rvea" in y_pred_test_enc:
-                labels = ["IBEA", "NSGA-III", "RVEA"]
-                disp = ConfusionMatrixDisplay(confusion_matrix=cm,
-                              display_labels=labels)
-            else:
-                labels = ["IBEA", "NSGA-III"]
-                disp = ConfusionMatrixDisplay(confusion_matrix=cm,
-                              display_labels=labels)
-        
-        disp.plot(ax=axes[j], colorbar=False)
-    
-    ax1.set_title('Algorithm')
-    ax2.set_title('Crossover operator')
-    ax3.set_title('Mutation operator')
-    ax2.set_ylabel('')
-    ax3.set_ylabel('')
-
-    plt.savefig(f'figures\\confusion_matrices\\{model_name}_v2.pdf')
-    plt.show()
 
     return y_pred_test
 
@@ -389,135 +298,166 @@ def get_predicted_labels(y_pred_test, enc):
         y_pred_test_tf.append(enc[i].inverse_transform(y_pred_test[:,i]))
     
     y_pred_test_df = pd.DataFrame(np.column_stack(y_pred_test_tf))
-    
-    print(y_pred_test_df)
 
     return y_pred_test_df
 
 
-def get_predicted_igd_values(y_pred_test_df: pd.DataFrame, y_test, df_original: pd.DataFrame, indexes: list[int], igd_dict:dict):
+def get_predicted_igd(test_problems: list[int], problem_data, y_pred, model_name:str, indicator:str, single_best_solver:int) -> list[float]:
     '''
-    Based on the predictions, obtain the IGD values of the chosen configurations.
+    Returns the IGD values of the configurations predicted by the model.
     '''
-    problems = []
-    problems_and_configs = []
+
+    # create a dataframe with the optimal config and the predictions
+    params = util.get_param_names()
+    y_pred_df = pd.DataFrame(np.array(y_pred), columns=params)
+    new_df = pd.concat([problem_data, y_pred_df], axis=1)
+
+    optimal_configs_test = []
+    predicted_configs_test = []
     igd_values = []
-    
-    # for each test problem, calculate the IGD value achieved by the predicted configuration
-    for i in range(len(y_test.index)):
-        problems.append(df_original.iloc[indexes[i]]["problem"])
-        row =  y_pred_test_df.iloc[i]
-        problem_plus_config = df_original.iloc[indexes[i]]["problem"] + '-' + row[0] + '-' + row[1] + '-' + row[2]
-        problems_and_configs.append(problem_plus_config)
-        igd_values.append(igd_dict[problem_plus_config][0])
+    sbs_igd_values = []
 
-    print(problems)
-    print(igd_values)
+    for problem in test_problems:
+        seed = 1
+        while True:
+            # get the best config + prediction for the given problem
+            best_config = new_df.loc[(new_df['problem_id'] == problem) & (new_df['seed'] == seed)]
 
-    return igd_values, problems
+            # only continue the loop if there are results for the given problem + seed pair
+            if len(best_config) < 1:
+                break
+
+            # get the EA id of the best config
+            ea_id = best_config["ea_id"].item()
+
+            # get the parameters of the best config
+            sql = f'''SELECT {','.join(params)} FROM eas WHERE ea_id = {ea_id}'''
+            res_ea = query_data(sql)
+
+            # append the best configuration to a list
+            optimal_configs_test.append(list(res_ea))
+
+            # get the prediction from the data and append it to a list
+            config = best_config[params].values.tolist()[0]
+            predicted_configs_test.append(config)
+
+            # get the EA id of the predicted configuration
+            sql = '''SELECT ea_id FROM eas WHERE'''
+            for param, val in zip(params, config):
+                sql += f''' {param} = '{val}' AND'''
+            sql = sql[:-3]
+            pred_ea_id = query_data(sql)
+
+            # get the IGD value of the predicted configuration
+            sql = f'''SELECT {indicator} FROM runs WHERE ea_id = {pred_ea_id[0]} AND problem_id = {problem}'''
+            res = query_data(sql)
+            # TODO: temporary solution to handle None values
+            # RVEA-NUM must be handled/ignored properly...
+            for i in range(len(res)):
+                if res[i][0] == None:
+                    res[i] = (9999999,)
+ 
+            median_igd = np.median(np.array(res))
+            igd_values.append(median_igd)
+
+            # get the IGD value of the SBS
+            sql = f'''SELECT {indicator} FROM runs WHERE ea_id = {single_best_solver} AND problem_id = {problem}'''
+            res = query_data(sql)
+            median_igd = np.median(np.array(res))
+            sbs_igd_values.append(median_igd)
+            seed += 1
+
+    # create and save confusion matrices of the predicted parameters of the configurations
+    util.create_confusion_matrices(np.asarray(optimal_configs_test), np.asarray(predicted_configs_test), model_name)
+
+    return igd_values, sbs_igd_values
 
 
-def print_decision_trees() -> None:
-    '''
-    Loads the decision tree models and prints a visualization of them.
-    '''
-
-    # only decision trees can be printed as decision trees
-    model = "Decision tree"
-    # TODO: this shouldn't be hardcoded
-    classes_full = [
-        ["IBEA", "NSGA-III", "RVEA"],
-        ["BLX-a", "LX", "SBX", "SAX"],
-        ["BPM", "MPTM", "NUM", "PM"]
-    ]
-    colors = ['orange', 'lightblue', 'plum', 'indianred']
-    with open(f'models\\{model}_classifier.pkl', 'rb') as f:
-        clf2 = pickle.load(f)
-        for i in range(len(clf2.estimators_)):
-            clf = clf2.estimators_[i]
-            features = clf.feature_names_in_
-            classes = classes_full[i]
-            plt.figure(figsize=(16,12))
-            treeplots = tree.plot_tree(clf, fontsize=11, feature_names=features, class_names=classes, impurity=False, filled=True, rounded=True)
-            treeplots_fixed = []
-            for treeplot in treeplots:
-                text = treeplot.get_text() 
-                # True and False labels aren't included in the visualization
-                if not any(x in text for x in ["True", "False"]):
-                    treeplots_fixed.append(treeplot)
-
-            for treeplot, impurity, value in zip(treeplots_fixed, clf.tree_.impurity, clf.tree_.value):
-                # let the max value decide the color; whiten the color depending on impurity (gini)
-                r, g, b = to_rgb(colors[np.argmax(value)])
-                f = impurity * len(classes)/(len(classes)-1) # for N colors: f = impurity * N/(N-1) if N>1 else 0
-                try:
-                    treeplot.get_bbox_patch().set_facecolor((f + (1-f)*r, f + (1-f)*g, f + (1-f)*b))
-                    treeplot.get_bbox_patch().set_edgecolor('black')
-                except:
-                    continue
-            plt.show()
-
-
-def do(model_dict: dict = None, feat_sets: list[str] = None, configs: list[str] = None, problems_to_ignore: list[str] = []) -> None:
+def do(model_dict: dict = None, configs: list[str] = None, indicator: str = None) -> None:
     '''
     The default function for running the full pipeline of classification-based configurator models.
     '''
 
-    # load the IGD data as a dictionary
-    _, igd_dict, _ = util.create_igd_array_and_dict('indicator_data\\igd_values_log.txt')
+    if model_dict == None:
+        model_dict = get_model_data()
 
-    # load the best configurations per problem
-    Y = load_response_variables(problems_to_ignore)
+    if indicator == None:
+        indicator = "igd" # TODO: if indicator is None, load the default indicator
 
-    # TODO: shouldn't be hardcoded
-    labels = ['problem', 'algo', 'crossover', 'mutation', 'objectives', 'variables']
+    # fetch the ids of problems used in the testing phase
+    test_prob = ["dtlz2", "wfg7", "re31", "re32", "re33", "re34", "re37", "re41", "re42", "re61"] 
+    test_problems = util.get_test_problems(test_prob)
 
-    # allow user the set which ELA feature sets to use
-    if feat_sets == None:
-        feat_sets = util.get_default_aggregators()
-
-    # get ELA feature names
-    labels = util.get_labels_from_file(labels, feat_sets)
-
-    # combine the datasets
-    data = util.load_data(Y, feat_sets, problem_instances)
-
-    # create a Pandas dataframe
-    df_original = pd.DataFrame(data, columns=labels)
-
-    X_train, X_test, y_train, y_test, y, enc = preprocess_data(df_original)
-    indexes = list(y_test.index)
-
-    # Select most relevant features and update the input variable dataset to reflect the selections
-    X_train, X_test = select_features(y, X_train, X_test, y_train)
+    scaler = StandardScaler()
 
     # Custom scoring function based on Macro F1 score
     scorer = make_scorer(multioutput_macro_f1)
 
-    # allow user to set the models and their hyperparameter options for hyperparameter optimization
-    if model_dict == None:
-        model_dict = get_model_data()
-    best_estimators = train_models(model_dict, scorer, X_train, y_train)
+    # Combine data from runs and features tables into one pandas dataframe
+    try:  
+        con = sqlite3.connect(database)
+        sql = f"""SELECT * FROM features"""
+        df = pd.read_sql_query(sql, con)
+        problem_ids = df['problem_id']
 
-    # allow user to set which configurations to use as benchmarks
-    if configs == None:
-        configs = util.get_benchmark_configurations()
+        # get the best configuration by problem
+        best_configs = get_best_configs_dictionary(indicator)
+        data_best = []
+        for id in problem_ids:
+            data_best.append(best_configs[id])
+
+        # combine the feature and EA data
+        data_best_df = pd.DataFrame(data_best, columns=['ea_id', indicator])
+        new_df = pd.concat([df, data_best_df], axis=1)
+
+        ea_dict = get_eas_dictionary()
+
+        ea_data = []
+        ea_ids = new_df["ea_id"]
+        for id in ea_ids:
+            ea_data.append(ea_dict[id])
+
+        y_cols = util.get_param_names()
+        data_ea_df = pd.DataFrame(ea_data, columns=["name"] + y_cols)
+
+        df = pd.concat([new_df, data_ea_df], axis=1)
+    except sqlite3.Error as e:
+        print(e)
+    finally:
+        con.close()
+
+    # load the single best solver, ignoring the test problems
+    single_best_solver = util.determine_single_best_solver(test_problems=test_problems)
+
+    # perform data preprocessing
+    data, problem_data, encs = prepare_data(df, test_problems, scaler, indicator)
 
     igd_value_sets = []
     config_labels = []
-    # loop through all models, evaluate the predictions and create plots
-    for model_name, best_model in best_estimators.items():
-        y_pred_test = evaluate_models(model_name, best_model, enc, X_test, y_test, y)
-        y_pred_test_df = get_predicted_labels(y_pred_test, enc)
-        igd_values, testproblems = get_predicted_igd_values(y_pred_test_df, y_test, df_original, indexes, igd_dict)
 
-        # display a proper performance profile plot comparing the configurator against the above configurations
-        util.create_performance_profile_plot(igd_dict, igd_values, configs, testproblems, model_name + '_classifier')
+    # loop through all models, evaluate the predictions and create plots
+    for model_name, model_data in model_dict.items():
+        # train the model, return the predictions
+        y_pred_test = train_models(model_name, model_data, scorer, data)
+        # inverse transform the predictions back to original values
+        y_pred_test_df = get_predicted_labels(y_pred_test, encs)
+        # get the IGD values achieved by the predictions and the SBS
+        igd_values, sbs_igd_values = get_predicted_igd(test_problems, problem_data, y_pred_test_df, model_name, indicator, single_best_solver)
+        config_results = [sbs_igd_values, igd_values]
+
+        # convert results to a dataframe
+        configs = ['SBS', model_name + ' classifier']
+        igd_df = pd.DataFrame(np.array(config_results).T, columns=configs)
+        
+        # display a proper performance profile plot comparing the configurator against the single best solver
+        util.create_performance_profile_plot(igd_df, configs, model_name + '_classifier')
 
         igd_value_sets.append(igd_values)
         config_labels.append(model_name + ' classifier')
 
-    util.create_performance_profile_plot(igd_dict, igd_value_sets, None, test_problems, 'classifiers', config_labels, font_size=6)   
+    # performance profile plot for comparing the configurators against each other
+    igd_df = pd.DataFrame(np.array(igd_value_sets).T, columns=config_labels)
+    util.create_performance_profile_plot(igd_df, config_labels, 'classifiers', font_size=6)   
 
     # TODO: currently print_decision_trees isn't called
 

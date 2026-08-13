@@ -34,8 +34,6 @@ def calc_pf_approx(problem_id:int, pf_approx_size:int=None) -> None:
     sql = '''SELECT run_id FROM runs WHERE problem_id = ?'''
     runs = query_data(sql, (problem_id,))
 
-    counter = 0
-
     # if reference PF size has not been set, use the default value
     # for the number of objective functions this problem has
     if pf_approx_size == None:
@@ -43,12 +41,13 @@ def calc_pf_approx(problem_id:int, pf_approx_size:int=None) -> None:
         n_obj = query_data(sql_prob, (problem_id,))[0]
         pf_approx_size = util.get_default_ref_pf_size(n_obj)
 
+    counter = 0
     pf = []
     for run in runs:
         run_id = run[0]
         # load the archived non-dominated solutions of the run if they exist
         try:
-            path = Path(BASE_PATH + 'archives_temp/' + str(run_id) + '.csv')
+            path = Path(BASE_PATH + 'archived_pops/' + str(run_id) + '.csv')
             pf2 = np.array(pd.read_csv(path))
         except:
             continue
@@ -69,8 +68,8 @@ def calc_pf_approx(problem_id:int, pf_approx_size:int=None) -> None:
             pf = pf2
 
     # save the temporary PF approximation to a file
-    path = Path(BASE_PATH + 'approx_pfs_temp/' + str(problem_id) + '.csv')
-    util.write_to_csv(path, np.array(pf))
+    #path = Path(BASE_PATH + 'approx_pfs_temp/' + str(problem_id) + '.csv')
+    #util.write_to_csv(path, np.array(pf))
 
     logger.info(f"Problem {problem_id} has a reference PF of size {len(pf)}")
     # if PF approximation is too large, perform distance-based subset selection

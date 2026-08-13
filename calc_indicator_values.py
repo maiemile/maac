@@ -108,7 +108,7 @@ def do(indicators:list[str]) -> None:
             if None in new_row[2:]:
                 completed_runs.append(new_row[:2] + [indicators] + [new_row[2:]])
 
-    #print(completed_runs)
+    print(len(completed_runs))
 
     with Pool(processes=cpu_count()) as pool:
         pool.starmap(calc_ind_val_problem, completed_runs)

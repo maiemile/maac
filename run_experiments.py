@@ -164,7 +164,7 @@ def do(setup:util.ExperimentalSetup):
 
     ctx = mp.get_context("spawn")
     # Create a pool of workers and finish the uncompleted runs
-    with ctx.Pool(processes=100) as pool:
+    with ctx.Pool(processes=mp.cpu_count()) as pool:
         # chunksize=1 for making sure that the calculation of the first seeds begins first  
         pool.starmap(run_experiment, uncompleted_runs) 
         pool.terminate()
