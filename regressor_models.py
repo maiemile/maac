@@ -1,4 +1,4 @@
-import utils as util
+# code by @maiemile
 
 import pandas as pd
 import numpy as np
@@ -8,6 +8,7 @@ import pickle
 import os
 
 from generate_database import get_best_config_by_problem, query_data
+import utils as util
 
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
 from sklearn.ensemble import RandomForestRegressor

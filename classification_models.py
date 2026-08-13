@@ -1,5 +1,6 @@
-import utils as util
+# code by @maiemile
 
+import utils as util
 from generate_database import query_data, get_best_configs_dictionary, get_eas_dictionary
 
 import sqlite3

@@ -14,6 +14,7 @@ pattern = "^[A-Za-z0-9_-]*$"
 # Load the filename of the database
 database = util.load_param_config('database_file')
 
+
 def get_number_of_rows(table:str) -> int:
     '''Get the number of rows in a table'''
     sql = f'''SELECT COUNT(1) FROM {table}'''
