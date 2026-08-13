@@ -4,7 +4,6 @@ import sqlite3
 import itertools
 import re
 import utils as util
-import pandas as pd
 import numpy as np
 
 # TODO: when new parameter options are given, create new columns, unique must be updated
@@ -16,13 +15,19 @@ database = util.load_param_config('database_file')
 
 
 def get_number_of_rows(table:str) -> int:
-    '''Get the number of rows in a table'''
+    '''
+    Get the number of rows in the table.
+    '''
     sql = f'''SELECT COUNT(1) FROM {table}'''
     res = query_data(sql)
     return res[0]
 
 
-def get_median_by_config_and_problem(problem_id:int, ea_id:int, indicator:str="igd"):
+def get_median_by_config_and_problem(problem_id:int, ea_id:int, indicator:str="igd") -> float:
+    '''
+    Get the median indicator value achieved across runs for the given problem and configuration
+    '''
+    
     sql = f'''SELECT AVG({indicator})
             FROM (SELECT {indicator}
               FROM runs
@@ -35,7 +40,10 @@ def get_median_by_config_and_problem(problem_id:int, ea_id:int, indicator:str="i
     return res_l[0]
 
 
-def get_best_config_by_median(indicator:str="igd"):
+def get_best_config_by_median(indicator:str="igd") -> list[list]:
+    '''
+    Get the best configuration for each problem by the median indicator value
+    '''
 
     # temporary solution for calculation the configuration with the best median by problem
     res = []
@@ -81,6 +89,10 @@ def get_best_config_by_problem(indicator:str="igd") -> list[tuple]:
 
 
 def get_best_configs_dictionary(indicator:str="igd") -> dict:
+    '''
+    Converts the best configuration by problem into a dictionary
+    '''
+
     data = get_best_config_by_problem(indicator)
     data_dict = {}
     for row in data:
@@ -90,6 +102,11 @@ def get_best_configs_dictionary(indicator:str="igd") -> dict:
 
 
 def get_eas_dictionary() -> dict:
+    '''
+    Get a dictionary of EAs, the key is the ID and the value
+    consists of the parameters
+    '''
+
     sql = '''SELECT * FROM eas'''
     ea_dict = {}
     data = query_data(sql)

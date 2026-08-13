@@ -33,16 +33,15 @@ def get_model_data() -> dict:
     regr_xg = xgb.XGBRegressor(random_state=0)
     regr_nn = MLPRegressor(random_state=0, max_iter=500)
     param_grid_rf = {
-        #"n_estimators": [10,50,100,200],
-        #"criterion": ["squared_error", "friedman_mse", "poisson"],
-        #"max_depth": [None, 2,4,7],
-        "max_features": [None]
-        #"max_features": [None, "sqrt", "log2"],
+        "n_estimators": [10,50,100,200],
+        "criterion": ["squared_error", "friedman_mse", "poisson"],
+        "max_depth": [None, 2,4,7],
+        "max_features": [None, "sqrt", "log2"],
     }
     param_grid_dt = {
-        #"criterion": ["squared_error", "friedman_mse", "poisson"],
-        #"max_depth": [None, 3,5,10],
-        #"max_features": [None, "sqrt", "log2"],
+        "criterion": ["squared_error", "friedman_mse", "poisson"],
+        "max_depth": [None, 3,5,10],
+        "max_features": [None, "sqrt", "log2"],
         "splitter": ["best", "random"]
     }
     param_grid_xg = {
@@ -61,8 +60,8 @@ def get_model_data() -> dict:
     model_dict = {
         "Random forest": [regr_rf, param_grid_rf], 
         "Decision tree": [regr_dt, param_grid_dt], 
-        #"XGBoost": [regr_xg, param_grid_xg],
-        #"Neural network": [regr_nn, param_grid_nn]
+        "XGBoost": [regr_xg, param_grid_xg],
+        "Neural network": [regr_nn, param_grid_nn]
     }
     
     return model_dict
@@ -74,6 +73,8 @@ def calculate_r2_scores(data, problem_data, indicator:str):
 
     for config in res:
         ea = config[0]
+
+    #TODO:
 
 
 def select_features(X_temp, y) -> list[int]:
@@ -127,7 +128,7 @@ def feature_selection(df_to_normalize, X_train, y_train, enc) -> tuple[list[int]
 
 
 def prepare_data(df: pd.DataFrame, test_problems: list[int], scaler, 
-                 enc, response_variable: str, load_features: bool=False) -> tuple[list, pd.DataFrame]:
+                 enc, response_variable: str) -> tuple[list, pd.DataFrame]:
     '''
     Does data preprocessing. Missing and unrealistic values are handled. 
     Categorical variables are encoded, numerical variables are scaled and train/test split is performed.
@@ -348,7 +349,7 @@ def do(model_dict: dict = None, configs: list[str] = None, indicator: str = None
     finally:
         con.close()
 
-    data, problem_data = prepare_data(df, test_problems, scaler, enc, indicator, load_models)
+    data, problem_data = prepare_data(df, test_problems, scaler, enc, indicator)
 
     igd_value_sets = []
     config_labels = []

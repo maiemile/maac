@@ -39,15 +39,15 @@ def get_model_data() -> dict:
     clf_nn = MultiOutputClassifier(MLPClassifier(random_state=42, max_iter=500))
 
     param_grid_rf = {
-        #"estimator__n_estimators": [10,50,100,200],
-        #"estimator__criterion": ["gini", "entropy", "log_loss"],
-        #"estimator__max_depth": [None, 2,4,7],
+        "estimator__n_estimators": [10,50,100,200],
+        "estimator__criterion": ["gini", "entropy", "log_loss"],
+        "estimator__max_depth": [None, 2,4,7],
         "estimator__max_features": [None, "sqrt", "log2"],
     }
     param_grid_dt = {
-        #"estimator__criterion": ["gini", "entropy", "log_loss"],
-        #"estimator__max_depth": [None, 3,5,10],
-        #"estimator__max_features": [None, "sqrt", "log2"],
+        "estimator__criterion": ["gini", "entropy", "log_loss"],
+        "estimator__max_depth": [None, 3,5,10],
+        "estimator__max_features": [None, "sqrt", "log2"],
         "estimator__splitter": ["best", "random"]
     }
     param_grid_lr = {
@@ -70,9 +70,9 @@ def get_model_data() -> dict:
     model_dict = {
         "Random forest": [clf_rf, param_grid_rf], 
         "Decision tree": [clf_dt, param_grid_dt], 
-        #"Logistic regression": [clf_lr, param_grid_lr],
-        #"XGBoost": [clf_xg, param_grid_xg],
-        #"Neural network": [clf_nn, param_grid_nn]
+        "Logistic regression": [clf_lr, param_grid_lr],
+        "XGBoost": [clf_xg, param_grid_xg],
+        "Neural network": [clf_nn, param_grid_nn]
         }
     
     return model_dict
@@ -440,8 +440,10 @@ def do(model_dict: dict = None, configs: list[str] = None, indicator: str = None
     for model_name, model_data in model_dict.items():
         # train the model, return the predictions
         y_pred_test = train_models(model_name, model_data, scorer, data)
+
         # inverse transform the predictions back to original values
         y_pred_test_df = get_predicted_labels(y_pred_test, encs)
+
         # get the IGD values achieved by the predictions and the SBS
         igd_values, sbs_igd_values = get_predicted_igd(test_problems, problem_data, y_pred_test_df, model_name, indicator, single_best_solver)
         config_results = [sbs_igd_values, igd_values]
