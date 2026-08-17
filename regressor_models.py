@@ -67,14 +67,62 @@ def get_model_data() -> dict:
     return model_dict
 
 
-def calculate_r2_scores(data, problem_data, indicator:str):
+def calculate_r2_scores(data, indicator:str):
+    '''
+    Calculates the R2 scores for regression models predicting the IGD value.
+    Saves the results in a .txt file.
+    '''
+
+    # get all EA ids
     sql = '''SELECT ea_id FROM eas'''
     res = query_data(sql)
 
+    X_train, X_test, y_train, y_test = data
+
+    # concat the data
+    X = pd.concat([X_train, X_test])
+    y = pd.concat([y_train, y_test])
+
+    # reset index to prevent any issues with indices
+    X = X.reset_index(drop=True)
+    y = y.reset_index(drop=True)
+
+    dataf = pd.concat([X,y], axis=1)
+
+    # loop through all configurations to get their R2 scores
+    r2_scores = []
     for config in res:
         ea = config[0]
 
-    #TODO:
+        # Load only rows that contain the correct configuration
+        index = "ea_id_" + str(ea)
+        dataf_prob = dataf[dataf[index] == 1.0]
+
+        # Run a default random forest regressor on the data
+        regr = RandomForestRegressor(random_state=0)
+
+        y_temp = dataf_prob[indicator]
+        X_temp = dataf_prob.drop([indicator], axis=1)
+
+        # Fit the model and calculate R2 scores on the train data
+        regr.fit(X_temp, y_temp)
+        y_pred = regr.predict(X_temp)
+        r2_pred = r2_score(y_temp, y_pred)
+        r2_scores.append((ea, r2_pred))
+
+    # Sort the configs based on the R2 scores in descending order
+    sorted_r2_scores = sorted(r2_scores, key=lambda x: x[1], reverse=True)  
+
+    for item in sorted_r2_scores:
+        print(item[0], item[1])
+
+    # save the sorted results to text files
+    path = Path(f'model_analysis\\r2_scores_regr.txt')
+    with open(path, "w") as file:
+        for line in sorted_r2_scores:
+            file.write(" ".join(str(item) for item in line) + "\n")
+
+    return sorted_r2_scores
 
 
 def select_features(X_temp, y) -> list[int]:
@@ -351,6 +399,8 @@ def do(model_dict: dict = None, configs: list[str] = None, indicator: str = None
 
     data, problem_data = prepare_data(df, test_problems, scaler, enc, indicator)
 
+    r2_scores = calculate_r2_scores(data, indicator)
+
     igd_value_sets = []
     config_labels = []
     mse_values = {}
@@ -379,8 +429,6 @@ def do(model_dict: dict = None, configs: list[str] = None, indicator: str = None
 
     for model, mse_value in mse_values.items():
         print(model, mse_value)
-
-    #calculate_r2_scores(data, problem_data, indicator) #TODO:
 
 
 if __name__ == "__main__":
