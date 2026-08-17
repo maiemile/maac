@@ -55,10 +55,10 @@ def get_model_data() -> dict:
         "estimator__solver": ['lbfgs','sag', 'saga']
     }
     param_grid_xg = {
-        "estimator__max_depth": [6,8,10,12],
+        #"estimator__max_depth": [6,8,10,12],
         "estimator__subsample": [0.5, 0.75, 1],
-        "estimator__eta": [0.01, 0.1, 0.3, 0.6],
-        "estimator__n_estimators": [10,50,100,200],
+        #"estimator__eta": [0.01, 0.1, 0.3, 0.6],
+        #"estimator__n_estimators": [10,50,100,200],
     }
     param_grid_nn = {
         "estimator__hidden_layer_sizes": [(30,10,6), (20,12,4), (50, 30, 10, 4), (16,6), (12,4)],
@@ -71,7 +71,7 @@ def get_model_data() -> dict:
         "Random forest": [clf_rf, param_grid_rf], 
         "Decision tree": [clf_dt, param_grid_dt], 
         "Logistic regression": [clf_lr, param_grid_lr],
-        "XGBoost": [clf_xg, param_grid_xg],
+        #"XGBoost": [clf_xg, param_grid_xg], # TODO: there is a persistent issue with XGBoost when some classes are rare
         "Neural network": [clf_nn, param_grid_nn]
         }
     
@@ -223,6 +223,8 @@ def prepare_data(df, test_problems, scaler, indicator):
     X_train = X_train[selected_features]
     X_test = X_test[selected_features]
 
+    # TODO: warning when one of the labels is missing from the y_train data
+
     return [X_train, X_test, y_train, y_test], df_test_data, encs
 
 
@@ -369,7 +371,7 @@ def get_predicted_igd(test_problems: list[int], problem_data, y_pred, model_name
             seed += 1
 
     # create and save confusion matrices of the predicted parameters of the configurations
-    util.create_confusion_matrices(np.asarray(optimal_configs_test), np.asarray(predicted_configs_test), model_name)
+    util.create_confusion_matrices(np.asarray(optimal_configs_test), np.asarray(predicted_configs_test), model_name + '_classifier', params)
 
     return igd_values, sbs_igd_values
 
@@ -386,7 +388,7 @@ def do(model_dict: dict = None, configs: list[str] = None, indicator: str = None
         indicator = "igd" # TODO: if indicator is None, load the default indicator
 
     # fetch the ids of problems used in the testing phase
-    test_prob = ["dtlz2", "wfg7", "re31", "re32", "re33", "re34", "re37", "re41", "re42", "re61"] 
+    test_prob = ["dtlz3", "wfg7", "re31", "re32", "re33", "re34", "re37", "re41", "re42", "re61"] 
     test_problems = util.get_test_problems(test_prob)
 
     scaler = StandardScaler()

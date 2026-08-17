@@ -6,6 +6,7 @@ import sqlite3
 import xgboost as xgb
 import pickle
 import os
+from pathlib import Path
 
 from generate_database import get_best_config_by_problem, query_data
 import utils as util
@@ -23,6 +24,7 @@ load_models = bool(util.load_param_config('load_models'))
 # Load the filename of the database and the base path
 database = util.load_param_config('database_file')
 
+
 def get_model_data() -> dict:
     '''
     Returns the default machine leraning models and their parameter options for hyperparameter optimization.
@@ -34,7 +36,7 @@ def get_model_data() -> dict:
     regr_nn = MLPRegressor(random_state=0, max_iter=500)
     param_grid_rf = {
         "n_estimators": [10,50,100,200],
-        "criterion": ["squared_error", "friedman_mse", "poisson"],
+        "criterion": ["squared_error", "poisson"],
         "max_depth": [None, 2,4,7],
         "max_features": [None, "sqrt", "log2"],
     }
@@ -275,8 +277,10 @@ def run_regression_models(test_problems: list[str], model, data:list,
 
     # reformulate the parameter names for SQL
     params = ''
+    params_list = []
     for item in res:
         params = params+item[0]+','
+        params_list.append(item[0])
     params = params[:-1]
     print(params)
 
@@ -294,7 +298,6 @@ def run_regression_models(test_problems: list[str], model, data:list,
 
     # Calculate MSE on the test data
     y_pred = best_estimator.predict(X_test)
-    # TODO: may need to inverse transform the above
     mse = mean_squared_error(y_test, y_pred)
     mpe = mean_absolute_percentage_error(y_test, y_pred)
 
@@ -332,10 +335,10 @@ def run_regression_models(test_problems: list[str], model, data:list,
             sql = f'''SELECT {params} FROM eas WHERE ea_id = {true_best}'''
             res_true = query_data(sql)
 
-            print('-----------------------------')
-            print(f"Prediction for problem {problem} with seed {seed}: EA with ID: {best_ea}, components {res}")
-            print("True best", res_true)
-            print('-----------------------------')
+            #print('-----------------------------')
+            #print(f"Prediction for problem {problem} with seed {seed}: EA with ID: {best_ea}, components {res}")
+            #print("True best", res_true)
+            #print('-----------------------------')
 
             optimal_configs_test.append(res_true)
             predicted_configs_test.append(res)
@@ -359,8 +362,11 @@ def run_regression_models(test_problems: list[str], model, data:list,
             sbs_igd_values.append(median_igd)
             seed += 1
 
+    for igd, sbs in zip(igd_values, sbs_igd_values):
+        print(f"IGD of the predicted configuration: {igd}, IGD of the SBS: {sbs}")
+
     # create and save confusion matrices of the predicted parameters of the configurations
-    util.create_confusion_matrices(np.asarray(optimal_configs_test), np.asarray(predicted_configs_test), model_name)
+    util.create_confusion_matrices(np.asarray(optimal_configs_test), np.asarray(predicted_configs_test), model_name+'_regressor', params_list)
 
     return mpe, igd_values, sbs_igd_values
 

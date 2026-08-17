@@ -56,7 +56,9 @@ def load_param_config(param:str) -> bool | str:
 
 
 def convert_data(df):
-    '''Converts binary variables to integers'''
+    '''
+    Converts binary variables to integers.
+    '''
     to_convert = list(df.select_dtypes(exclude=["float64", "int"]).columns)
     for col in to_convert:
         df[col] = df[col].apply(
@@ -66,7 +68,9 @@ def convert_data(df):
 
 
 def get_param_names() -> list[str]:
-    '''Returns the EA configuration parameter names'''
+    '''
+    Returns the EA configuration parameter names.
+    '''
     from generate_database import query_data
     # find the EA parameter names
     sql ='''SELECT name FROM PRAGMA_TABLE_INFO('eas') WHERE name!='ea_id' AND name!='name' '''
@@ -79,9 +83,12 @@ def get_param_names() -> list[str]:
 
 
 def determine_single_best_solver(test_problems:list[int]=[], indicator:str = 'igd') -> int:
-    '''Returns the ID of the single best solver, ignoring the test problems'''
+    '''
+    Returns the ID of the single best solver, ignoring the supplied test problems.
+    '''
     from generate_database import query_data, get_median_by_config_and_problem
 
+    # load all EA ids
     sql = '''SELECT ea_id FROM eas'''
     res = query_data(sql)
 
@@ -89,6 +96,7 @@ def determine_single_best_solver(test_problems:list[int]=[], indicator:str = 'ig
     for row in res:
         ea_ids.append(row[0])
 
+    # load all problem ids
     sql = '''SELECT problem_id FROM problems'''
     res = query_data(sql)
 
@@ -96,6 +104,9 @@ def determine_single_best_solver(test_problems:list[int]=[], indicator:str = 'ig
     for row in res:
         prob_ids.append(row[0])
 
+    # loop through all EAs and problems
+    # get the median of that combination
+    # then calculate the mean of the medians across all problems
     avgs = {}
     for ea_id in ea_ids:
         median_list = []
@@ -103,6 +114,7 @@ def determine_single_best_solver(test_problems:list[int]=[], indicator:str = 'ig
             if prob_id in test_problems:
                 continue
             median = get_median_by_config_and_problem(prob_id, ea_id, indicator)
+            # if the median could not be calculated, replace it with a large value
             if median == None:
                 median_list.append(99999999)
             else:
@@ -111,12 +123,13 @@ def determine_single_best_solver(test_problems:list[int]=[], indicator:str = 'ig
         average = np.mean(median_list)
         avgs[ea_id] = average
 
+    # the SBS is the configuration with the smallest average median 
     sbs = min(avgs, key=avgs.get)
 
     return sbs
 
 
-def create_confusion_matrices(y_test, y_pred_test, model_name:str) -> None:
+def create_confusion_matrices(y_test, y_pred_test, model_name:str, titles:list[str]=None) -> None:
     '''
     Creates a separate confusion matrix for each output. 
     The confusion matrices are saved in a folder.
@@ -131,8 +144,10 @@ def create_confusion_matrices(y_test, y_pred_test, model_name:str) -> None:
         disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=labels)
         disp.plot(ax=axes[j], colorbar=False)
 
-    # TODO: get titles from user OR search from the database
-    titles = ['Algorithm', 'Crossover operator', 'Mutation operator']
+    if titles == None:
+        titles = get_param_names()
+
+    # only set the x and y labels to the left and below the full plot
     for i in range(params):
         axes[i].set_title(titles[i])
         if i % 3 != 0:
@@ -140,7 +155,6 @@ def create_confusion_matrices(y_test, y_pred_test, model_name:str) -> None:
         if i < params-3:
             axes[i].set_xlabel('')
 
-    # TODO: fix the filename
     plt.savefig(f'figures\\confusion_matrices\\{model_name}.pdf')
     plt.show()
 
@@ -247,7 +261,7 @@ def create_performance_profile_plot(igd_df, configs: list[str], fig_name:str="im
     """
     Creates a performance profile plot with the given data.
     
-    :param igd_df: TODO:
+    :param igd_df: A dataframe with the indicator values by configuration: one row per problem, one column per configuration
     :param configs: Configurations to plot in the graph
     :param fig_name: Name of the created figure
     :param font_size: Controls the font size of the legend
@@ -264,5 +278,5 @@ def create_performance_profile_plot(igd_df, configs: list[str], fig_name:str="im
 
     # convert the benchmark configuration names to upper case
     plt.legend(configs, loc=4, fontsize=font_size)
-    plt.savefig(f'figures\\perf_prof\\{fig_name}_database_test.pdf')
+    plt.savefig(f'figures\\perf_prof\\{fig_name}.pdf')
     plt.show()
