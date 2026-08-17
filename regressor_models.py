@@ -119,7 +119,7 @@ def calculate_r2_scores(data, indicator:str):
         print(item[0], item[1])
 
     # save the sorted results to text files
-    path = Path(f'model_analysis\\r2_scores_regr.txt')
+    path = Path('model_analysis/r2_scores_regr.txt')
     with open(path, "w") as file:
         for line in sorted_r2_scores:
             file.write(" ".join(str(item) for item in line) + "\n")
