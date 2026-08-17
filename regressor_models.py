@@ -27,7 +27,7 @@ database = util.load_param_config('database_file')
 
 def get_model_data() -> dict:
     '''
-    Returns the default machine leraning models and their parameter options for hyperparameter optimization.
+    Returns the default machine learning models and their parameter options for hyperparameter optimization.
     '''
     # models and their parameter grid for grid search with cross-validation
     regr_rf = RandomForestRegressor(random_state=0)
