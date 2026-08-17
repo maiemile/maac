@@ -1,5 +1,43 @@
 # Modular Automatic Algorithm Configuration (MAAC)
 
+## Get started
+
+For now, you can run the full pipeline. The new full dataset will be available later, which will enable users to use pre-existing configurator models
+for their problems.
+
+### Required libraries
+
+If you wish to run the entire pipeline of code, some libraries must be installed in your environment:
+- DESDEO
+- pflacco
+- xgboost
+- scienceplots
+- numdifftools
+
+### The pipeline
+
+The pipeline consists of several components. The individual components are described in further detail below the list.
+
+- main.py: This file exists to streamline the process of running several scripts. It also creates the necessary folders for other scripts.
+- generate_database.py: Creates the following tables of the database: EAs, problems, features and runs. Also contains most database query functions.
+- run_experiments.py: Runs the configurations on the problems. Saves the final populations and non-dominated archives. Also runs the necessary ELA calculations.
+- (sampling.py): Conducts the ELA calculations by sampling the problems. Is automatically run via run_experiments.py.
+- pf_approx_from_archives.py: Calculates the reference Pareto fronts per problem from the associated non-dominated archives. Performs distance-based subset selection.
+TODO: the code for handling too large archives is missing
+- calc_indicator_values.py: Calculates the indicator values of the runs using the reference PFs and non-dominated archives.
+- regressor_models.py: Preprocesses data before training and testing regressor-based configurator models. Creates some visualizations on the test results.
+- classification_models.py: Preprocesses data before training and testing classifier-based configurator models. Creates some visualizations on the test results.
+
+Other files:
+- utils.py: Contains many useful functions used by the other scripts.
+- reprob.py: Implements some RE problems missing from DESDEO.
+- perfprof.py: Slightly modified version of the performance profile plot code from the [perfprof](https://github.com/dmsteck/perfprof.py) package.
+- config.txt: Contains many important configuration options for running the scripts.
+
+### TODO: Roihu support
+
+# Old guide
+
 ## Get Started
 
 The other datasets can be found on [Zenodo](https://doi.org/10.5281/zenodo.20393563).
@@ -11,13 +49,6 @@ If you wish to run the entire pipeline of code, some libraries must be installed
 - reproblem
 - pflacco
 - xgboost
-
-### Execute the pipeline (easy version)
-
-If you wish to run the entire pipeline (or some parts of it) with mostly default options, main.py is the way to go. 
-Simply run the file. You can customize which parts of the pipeline to run using the "pipeline" variable.
-TODO: the current version may not function with the existing datasets. If you wish to use the existing datasets,
-follow the instructions below.
 
 ### Conduct algorithm configuration runs
 
