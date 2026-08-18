@@ -33,6 +33,25 @@ Other files:
 - perfprof.py: Slightly modified version of the performance profile plot code from the [perfprof](https://github.com/dmsteck/perfprof.py) package.
 - config.txt: Contains many important configuration options for running the scripts.
 
+#### Database generation
+
+This package uses an SQLite database for storing most relational data. The database structure is created by the generate_database.py file.
+The script also fills in the supplied data for EA configurations, problems and run details.
+
+#### Run the experiments
+
+The experiments are run using the file run_experiments.py. Each configuration is run on each problem for each seed and the defined number of function evaluations. The ELA features are calculated once per unique seed on each problem. The feature calculations are performed by using the initial population sampled using the Latin hypercube sampling technique. The non-dominated archive and final population are saved from each run. Only runs without an existing archive are run.
+
+#### Reference Pareto front calculations
+
+The reference Pareto fronts (PFs) are calculated from the non-dominated archives in the file pf_approx_from_archives.py. First, all archives are merged together to fetch the full set of non-dominated solutions across all archives. Then, distance-based subset selection is performed to limit the size of the reference PF.
+
+NOTE: If the merged non-dominated archives would be excessively large, it is recommended to use alternative archiving strategies.
+
+#### Indicator calculations
+
+The performance indicators are calculated using the reference PFs and non-dominated archives in the file calc_indicator_values.py. The values are only calculated for the given indicators if no value exists and only for runs that have both a non-dominated archive and a corresponding reference PF available.  
+
 ## Basic guides
 
 ### Choose a different indicator
@@ -66,55 +85,4 @@ Support for other problems is not planned.
 
 # Old guide
 
-## Get Started
-
-The other datasets can be found on [Zenodo](https://doi.org/10.5281/zenodo.20393563).
-
-### Required libraries
-
-If you wish to run the entire pipeline of code, some libraries must be installed in your environment:
-- DESDEO
-- reproblem
-- pflacco
-- xgboost
-
-### Conduct algorithm configuration runs
-
-The algorithm configurations are run on a set of problems using the file run_experiments.py.
-
-### Calculate exploratory landscape analysis (ELA) features
-
-All ELA features are calculated using the file sampling.py.
-
-### Calculate Pareto front approximations
-
-Pareto front approximations are calculated using the file pf_approx_from_archives.py.
-By default, a maximum of 2000 solutions are included in the approximation using distance-based subset selection.
-
-### Calculate performance indicator values
-
-Performance indicator values are calculated with the file calc_indicator_values.py.
-By default, IGD and IGD+ are calculated. The file contains code for calculating HV values,
-but note that the calculation of HV values is **extremely slow** once the number of objective
-functions increases.
-Best configurations in terms of IGD, IGD+, and HV can be quickly calculated per problem using best_hv_values.py and best_igd.py
-
-### Run and test configurator models
-
-Classification-based configurator models are run using the file classification_models.py (alternatively, configurator_model.ipynb).
-Regression-based configurator models are run using the file regressor_models.py.
-These files include code for creating visualizations of the confusion matrices, performance profile plots and decision trees.
-R^2 scores of the regressor models can also be calculated in the file regressor_models.py.
-
-If you wish to retrain the configurator models instead of testing existing models, set the variable "load_models" in config.txt to False
-
-### (Optional: Use Puhti for expensive calculations)
-
-UPDATE: Puhti will be decommissioned by the end of July 2026. New scripts for [Roihu](https://docs.csc.fi/computing/systems-roihu/) might be added here later.
-
-Two shell script files for the Puhti supercomputer at CSC are included in this repository:
-- experimental_script.sh: runs the main script for running EA configurations on problems
-- pf_approx_script.sh: calculates Pareto front approximations from archives
-
-In the script files, fill in spaces marked with 'XXXXXX' with your project name. Python has to be set up with venv.
-More information on Puhti can be found here: [https://docs.csc.fi/computing/systems-puhti/](https://docs.csc.fi/computing/systems-puhti/)
+If you wish to use the old version of the package, download the earliest available version and have a look at the README.md file.
