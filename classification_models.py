@@ -246,7 +246,8 @@ def train_models(model:str, model_data, scorer, data):
         param_grid = model_data[1]
 
         # Use cross-validation as the dataset is small
-        kfold = KFold(n_splits=2, shuffle=True, random_state=42)
+        # TODO: could stratify this?
+        kfold = KFold(n_splits=10, shuffle=True, random_state=42)
 
         # grid search is fine with a small parameter grid
         # TODO: allow other types of cross-validation?

@@ -241,14 +241,14 @@ def optimize_models(regr, X_train, y_train, param_grid:dict):
     Performs hyperparameter optimization for the given regression model and its parameter grid
     '''
 
-    kfold = KFold(n_splits=2, shuffle=True, random_state=42)
+    kfold = KFold(n_splits=5, shuffle=True, random_state=42)
 
     grid_search = GridSearchCV(
         estimator=regr,
         param_grid=param_grid,
         cv=kfold,
         scoring='neg_mean_absolute_percentage_error', # negative MAPE because grid search tries to maximize the score
-        verbose=1
+        verbose=2
     )
     grid_search.fit(X_train, y_train)
 
@@ -282,7 +282,7 @@ def run_regression_models(test_problems: list[str], model, data:list,
         params = params+item[0]+','
         params_list.append(item[0])
     params = params[:-1]
-    print(params)
+    #print(params)
 
     if load_file:
         # Load the model
