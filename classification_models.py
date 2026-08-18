@@ -56,10 +56,10 @@ def get_model_data() -> dict:
         "estimator__solver": ['lbfgs','sag', 'saga']
     }
     param_grid_xg = {
-        #"estimator__max_depth": [6,8,10,12],
+        "estimator__max_depth": [6,8,10,12],
         "estimator__subsample": [0.5, 0.75, 1],
-        #"estimator__eta": [0.01, 0.1, 0.3, 0.6],
-        #"estimator__n_estimators": [10,50,100,200],
+        "estimator__eta": [0.01, 0.1, 0.3, 0.6],
+        "estimator__n_estimators": [10,50,100,200],
     }
     param_grid_nn = {
         "estimator__hidden_layer_sizes": [(30,10,6), (20,12,4), (50, 30, 10, 4), (16,6), (12,4)],
@@ -256,7 +256,7 @@ def train_models(model:str, model_data, scorer, data):
             param_grid=param_grid,
             cv=kfold,
             scoring=scorer,   # macro F1 averaged across folds
-            verbose=1
+            verbose=2
         )
         grid_search.fit(X_train, y_train)
         print("Best parameters:", grid_search.best_params_)

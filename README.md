@@ -2,6 +2,8 @@
 
 ## Get started
 
+TODO: 
+
 For now, you can run the full pipeline. The new full dataset will be available later, which will enable users to use pre-existing configurator models for their problems.
 
 ### Required libraries
@@ -51,6 +53,22 @@ NOTE: If the merged non-dominated archives would be excessively large, it is rec
 #### Indicator calculations
 
 The performance indicators are calculated using the reference PFs and non-dominated archives in the file calc_indicator_values.py. The values are only calculated for the given indicators if no value exists and only for runs that have both a non-dominated archive and a corresponding reference PF available.  
+
+### Run and test the configurator models
+
+There are two types of configurator models. The regression-based models are run using the file regressor_models.py. The classification-based models are run using the file classification_models.py. 
+
+The files perform the following pipeline:
+- First, the dataset is loaded and preprocessed. Empty and infinite values are handled.
+- Then, the train/test split is performed. 
+- The train set is used for training the models using the defined hyperparameter optimization regime and cross-validation. 
+- The best model is saved and used for testing. 
+- The testing includes calculating key metrics on the test set. 
+- Moreover, visualizations such as confusion matrices and performance profile plots are created.
+
+In both files, new models are trained by default. If you already have models you wish to load to test and create the visualizations for them, set the parameter "load_models" in config.txt to True.
+
+In addition to the above, the R^2 scores are calculated for the random forest regressors configuration by configuration.
 
 ## Basic guides
 
