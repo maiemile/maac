@@ -25,8 +25,7 @@ if __name__ == "__main__":
     num_of_evaluations = [10000]
 
     # TODO: need a better implementation for this
-    pipeline = ["run_experiments"]#["approx_pf", "generate_database", "run_experiments", "calculate_indicators"]
-    #pipeline = ["classification", "regression"]
+    pipeline = ["generate_database", "run_experiments"]
 
     indicators = ["igd", "igd_plus"]
 

@@ -35,14 +35,34 @@ Other files:
 
 ## Basic guides
 
-### Choosing a different indicator
+### Choose a different indicator
 
 By default, MAAC uses IGD as the performance indicator. If you wish to change the indicator, change the "indicator" field in config.txt.
 Furthermore, if you wish to calculate multiple indicators, TODO:
 Currently supported indicators (use the name in the brackets): IGD (igd), IGD+ (igd_plus).
-Guide for adding additional indicators is TODO:
+Guide for adding other indicators is TODO:
 
-### TODO: Roihu support
+### Add new problems/instances
+
+Currently, the following problem suites are supported natively:
+- All DTLZ problems from pymoo
+- All WFG problems from pymoo
+- 8 RE problems from DESDEO/local implementations (see utils.py)
+
+Adding new problem instances from DTLZ/WFG is simple. Just modify the "problem_instances" object in main.py.
+Additionally, if you are running the run_experiments.py file directly, modify the "problem_instances" object.
+If you wish to add new problems from pymoo or DESDEO, the process is almost as straightforward.
+For pymoo, follow the example set in "get_problem_object" in utils.py.
+For DESDEO, follow the examples set in "get_problem_object" and "get_re_problems" in utils.py.
+Support for other problems is not planned.
+
+### TODO: Add new parameters/options
+
+### TODO: Change the experimental structure
+
+### TODO: Change the hyperparameter optimization process
+
+### TODO: CSC Roihu support
 
 # Old guide
 
