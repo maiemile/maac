@@ -45,11 +45,25 @@ def get_best_config_by_median(indicator:str="igd") -> list[list]:
     Get the best configuration for each problem by the median indicator value
     '''
 
+    # load all EA ids
+    sql = '''SELECT ea_id FROM eas'''
+    res = query_data(sql)
+    ea_ids = []
+    for row in res:
+        ea_ids.append(row[0])
+
+    # load all problem ids
+    sql = '''SELECT problem_id FROM problems'''
+    res = query_data(sql)
+    prob_ids = []
+    for row in res:
+        prob_ids.append(row[0])
+
     # temporary solution for calculation the configuration with the best median by problem
     res = []
-    for i in range(1,73): # TODO: find the existing ea_ids instead
+    for i in prob_ids:
         res_prob = []
-        for j in range(1,49): # TODO: find the existing problem_ids instead
+        for j in ea_ids:
             res_l = get_median_by_config_and_problem(i, j, indicator)
             if res_l == None:
                 res_prob.append(99999999)
