@@ -9,6 +9,7 @@ import numpy as np
 import xgboost as xgb
 import pickle
 import os
+from pathlib import Path
 
 from sklearn.model_selection import KFold, GridSearchCV
 from sklearn.feature_selection import SelectKBest, f_classif
@@ -116,7 +117,7 @@ def select_features(X_train, y_train) -> list[str]:
             raise Exception('No models found. Feature names could not be loaded.')
         
         # the following code is used when wanting to access the features used for a model
-        with open(f'models\{modelname}_classifier_v2.pkl', 'rb') as f:
+        with open(Path(f'models/{modelname}_classifier.pkl'), 'rb') as f:
             clf2 = pickle.load(f)
         for clf in clf2.estimators_:
             features = clf.feature_names_in_
@@ -237,7 +238,7 @@ def train_models(model:str, model_data, scorer, data):
     X_train, X_test, y_train, y_test = data
     if load_models:
         #load the model
-        with open(f'models\\{model}_classifier_v2.pkl', 'rb') as f:
+        with open(Path(f'models/{model}_classifier.pkl'), 'rb') as f:
             clf2 = pickle.load(f)
         best_estimator = clf2
     else:
@@ -263,7 +264,7 @@ def train_models(model:str, model_data, scorer, data):
         print("Best CV score (macro F1):", grid_search.best_score_)
 
         #save the model
-        with open(f'models\\{model}_classifier_v2.pkl','wb') as f:
+        with open(Path(f'models/{model}_classifier.pkl'),'wb') as f:
             pickle.dump(grid_search.best_estimator_,f)
 
         best_estimator = grid_search.best_estimator_

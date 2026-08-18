@@ -133,7 +133,7 @@ def select_features(X_temp, y) -> list[int]:
     '''
 
     # TODO: k should be a config parameter
-    selector = SelectKBest(f_regression, k=100)
+    selector = SelectKBest(f_regression, k=50)
     _ = selector.fit_transform(X_temp, y)
     cols_idxs = list(selector.get_support(indices=True))
 
@@ -160,7 +160,7 @@ def feature_selection(df_to_normalize, X_train, y_train, enc) -> tuple[list[int]
         if modelname == None:
             raise Exception('No models found. Feature names could not be loaded.')
         
-        with open(f'models\\{modelname}', 'rb') as f:
+        with open(Path(f'models/{modelname}'), 'rb') as f:
             best_estimator = pickle.load(f)
             feature_names = best_estimator.feature_names_in_
             # get the indexes of the existing features in the dataframe
@@ -286,14 +286,14 @@ def run_regression_models(test_problems: list[str], model, data:list,
 
     if load_file:
         # Load the model
-        with open(f'models\\{model_name}_regressor.pkl', 'rb') as f:
+        with open(Path(f'models/{model_name}_regressor.pkl'), 'rb') as f:
             best_estimator = pickle.load(f)
     else:
         # do hyperparameter optimization for the chosen regressor model
         best_estimator = optimize_models(regr, X_train, y_train, param_grid)
     
         # save the model
-        with open(f'models\\{model_name}_regressor.pkl','wb') as f:
+        with open(Path(f'models/{model_name}_regressor.pkl'),'wb') as f:
             pickle.dump(best_estimator,f)
 
     # Calculate MSE on the test data
