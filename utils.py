@@ -80,11 +80,15 @@ def get_param_names() -> list[str]:
     return params
 
 
-def determine_single_best_solver(test_problems:list[int]=[], indicator:str = 'igd') -> int:
+def determine_single_best_solver(test_problems:list[int]=[], indicator:str = None) -> int:
     '''
     Returns the ID of the single best solver, ignoring the supplied test problems.
     '''
     from generate_database import query_data, get_median_by_config_and_problem
+
+    if indicator == None:
+        # Load the default indicator
+        indicator = load_param_config('indicator')
 
     # load all EA ids
     sql = '''SELECT ea_id FROM eas'''

@@ -78,12 +78,16 @@ def calc_ind_val_problem(run_id:int, problem_id:int, indicators:list[str], ind_v
     logger.info(res[0])
 
 
-def do(indicators:list[str]) -> None:
+def do(indicators:list[str]=None) -> None:
     '''
     Function for setting up the indicator calculations with multiprocessing.
     Finds all runs and identified which ones are missing indicator values according to the given indicator list.
     Can only calculate indicator values for runs which have a saved archive and a corresponding PF approximation.
     '''
+
+    if indicators == None:
+        # Load the default indicator
+        indicators = [util.load_param_config('indicator')]
 
     sql_query = '''SELECT run_id, problem_id'''
 
@@ -117,4 +121,4 @@ def do(indicators:list[str]) -> None:
 
 
 if __name__ == "__main__":
-    do(["igd"])
+    do()

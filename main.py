@@ -92,14 +92,14 @@ if __name__ == "__main__":
     if "calculate_indicators" in pipeline:
        calc_indicator_values.do(indicators)
 
-    if "best_indicator" in pipeline:
-        best_igd.do()
+    #if "best_indicator" in pipeline:
+    #    best_igd.do()
 
-    if "igd_analysis" in pipeline:
-        igd_analysis.do()
+    #if "igd_analysis" in pipeline:
+    #    igd_analysis.do()
 
-    if "sampling" in pipeline:
-        sampling.do()
+    #if "sampling" in pipeline:
+    #    sampling.do()
 
     if "classification" in pipeline:
         classification_models.do()

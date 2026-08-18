@@ -41,7 +41,7 @@ def get_model_data() -> dict:
         "max_features": [None, "sqrt", "log2"],
     }
     param_grid_dt = {
-        "criterion": ["squared_error", "friedman_mse", "poisson"],
+        "criterion": ["squared_error", "absolute_error", "poisson"],
         "max_depth": [None, 3,5,10],
         "max_features": [None, "sqrt", "log2"],
         "splitter": ["best", "random"]
@@ -60,10 +60,10 @@ def get_model_data() -> dict:
     }
 
     model_dict = {
-        "Random forest": [regr_rf, param_grid_rf], 
+        #"Random forest": [regr_rf, param_grid_rf], 
         "Decision tree": [regr_dt, param_grid_dt], 
-        "XGBoost": [regr_xg, param_grid_xg],
-        "Neural network": [regr_nn, param_grid_nn]
+        #"XGBoost": [regr_xg, param_grid_xg],
+        #"Neural network": [regr_nn, param_grid_nn]
     }
     
     return model_dict
@@ -151,7 +151,6 @@ def feature_selection(df_to_normalize, X_train, y_train, enc) -> tuple[list[int]
         for x in os.listdir('models'):
             # TODO: could allow other file types, model chosen by user?
             if x.endswith(".pkl"):
-                # TODO: is _classifier sufficient as an identifier of classification models
                 if '_regressor' in x:
                     modelname = x
                     break
@@ -380,7 +379,8 @@ def do(model_dict: dict = None, configs: list[str] = None, indicator: str = None
         model_dict = get_model_data()
 
     if indicator == None:
-        indicator = "igd" # TODO: if indicator is None, load the default indicator
+        # Load the default indicator
+        indicator = util.load_param_config('indicator')
 
     # fetch the ids of problems used in the testing phase
     test_prob = ["dtlz2", "wfg7", "re31", "re32", "re33", "re34", "re37", "re41", "re42", "re61"] 
@@ -405,7 +405,7 @@ def do(model_dict: dict = None, configs: list[str] = None, indicator: str = None
 
     data, problem_data = prepare_data(df, test_problems, scaler, enc, indicator)
 
-    r2_scores = calculate_r2_scores(data, indicator)
+    #r2_scores = calculate_r2_scores(data, indicator)
 
     igd_value_sets = []
     config_labels = []

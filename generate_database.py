@@ -403,11 +403,15 @@ def generate_feature_table(aggregators:list[str]=None):
     return sql
 
 
-def do(setup: util.ExperimentalSetup, indicators:list[str], n_of_repeats:list[int]=[1], target_evals:list[int]=[10000]) -> None:
+def do(setup: util.ExperimentalSetup, indicators:list[str]=None, n_of_repeats:list[int]=[1], target_evals:list[int]=[10000]) -> None:
     '''
     Main function for generating and populating 3 SQL tables in a database:
     1) EA table 2) problem table 3) run table
     '''
+
+    if indicators == None:
+        # Load the default indicator
+        indicators = [util.load_param_config('indicator')]
 
     # load the configuration options and problems from the parameters
     options = setup.options

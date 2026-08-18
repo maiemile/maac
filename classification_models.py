@@ -107,7 +107,6 @@ def select_features(X_train, y_train) -> list[str]:
         for x in os.listdir('models'):
             # TODO: could allow other file types
             if x.endswith(".pkl"):
-                # TODO: is _classifier sufficient as an identifier of classification models
                 if '_classifier' in x:
                     modelname = x
                     break
@@ -387,7 +386,8 @@ def do(model_dict: dict = None, configs: list[str] = None, indicator: str = None
         model_dict = get_model_data()
 
     if indicator == None:
-        indicator = "igd" # TODO: if indicator is None, load the default indicator
+        # Load the default indicator
+        indicator = util.load_param_config('indicator')
 
     # fetch the ids of problems used in the testing phase
     test_prob = ["dtlz3", "wfg7", "re31", "re32", "re33", "re34", "re37", "re41", "re42", "re61"] 

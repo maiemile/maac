@@ -2,8 +2,7 @@
 
 ## Get started
 
-For now, you can run the full pipeline. The new full dataset will be available later, which will enable users to use pre-existing configurator models
-for their problems.
+For now, you can run the full pipeline. The new full dataset will be available later, which will enable users to use pre-existing configurator models for their problems.
 
 ### Required libraries
 
@@ -33,6 +32,15 @@ Other files:
 - reprob.py: Implements some RE problems missing from DESDEO.
 - perfprof.py: Slightly modified version of the performance profile plot code from the [perfprof](https://github.com/dmsteck/perfprof.py) package.
 - config.txt: Contains many important configuration options for running the scripts.
+
+## Basic guides
+
+### Choosing a different indicator
+
+By default, MAAC uses IGD as the performance indicator. If you wish to change the indicator, change the "indicator" field in config.txt.
+Furthermore, if you wish to calculate multiple indicators, TODO:
+Currently supported indicators (use the name in the brackets): IGD (igd), IGD+ (igd_plus).
+Guide for adding additional indicators is TODO:
 
 ### TODO: Roihu support
 
