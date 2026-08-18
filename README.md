@@ -1,8 +1,9 @@
 # Modular Automatic Algorithm Configuration (MAAC)
 
-## Get started
+This package offers some tools for per-instance automatic algorithm configuration of multiobjective evolutionary algorithms.
+Ideally, the configurator models created would be able to choose the optimal configuration for any problem based on mathematical features calculated from a small sample.
 
-TODO: 
+## Get started
 
 For now, you can run the full pipeline. The new full dataset will be available later, which will enable users to use pre-existing configurator models for their problems.
 

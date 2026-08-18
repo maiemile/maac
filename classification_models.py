@@ -116,7 +116,7 @@ def select_features(X_train, y_train) -> list[str]:
             raise Exception('No models found. Feature names could not be loaded.')
         
         # the following code is used when wanting to access the features used for a model
-        with open(Path(f'models/{modelname}_classifier.pkl'), 'rb') as f:
+        with open(Path(f'models/{modelname}'), 'rb') as f:
             clf2 = pickle.load(f)
         for clf in clf2.estimators_:
             features = clf.feature_names_in_
