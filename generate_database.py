@@ -232,6 +232,7 @@ def generate_ea_table(options:dict) -> None:
     
     # TODO: might make sense to add all parameter columns individually so that new ones can be added automatically with user input
     # to the existing table
+    # > the above won't work easily due to the unique constraint
     
     # add the configuration options and their types to the sql statement
     # we also add a unique statement to avoid duplicate configurations

@@ -79,6 +79,7 @@ By default, MAAC uses IGD as the performance indicator. If you wish to change th
 Furthermore, if you wish to calculate multiple indicators, TODO:
 Currently supported indicators (use the name in the brackets): IGD (igd), IGD+ (igd_plus).
 Guide for adding other indicators is TODO:
+Note that the code currently only supports indicators which are to be **minimized**.
 
 ### Add new problems/instances
 
@@ -94,7 +95,10 @@ For pymoo, follow the example set in "get_problem_object" in utils.py.
 For DESDEO, follow the examples set in "get_problem_object" and "get_re_problems" in utils.py.
 Support for other problems is not planned.
 
-### TODO: Add new parameters/options
+### Add new parameters/options
+
+Adding new parameters (or additional options) may be slightly trickier. In simple cases, adding the parameter options to the "options" dictionary in main.py is the first step. The parameter value should also be modified in the main_template in the file run_experiments.py. In case the parameter requires some problem- or setup-specific options, they need to be handled manually in the same run_experiment() function. The code doesn't support defining forbidden parameter combinations or otherwise correlated parameters.
+TODO: adding new parameters doesn't work for now
 
 ### Change the core experimental structure
 

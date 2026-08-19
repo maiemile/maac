@@ -125,6 +125,9 @@ def determine_single_best_solver(test_problems:list[int]=[], indicator:str = Non
         average = np.mean(median_list)
         avgs[ea_id] = average
 
+    for k,v in avgs.items():
+        print(k,v)
+
     # the SBS is the configuration with the smallest average median 
     sbs = min(avgs, key=avgs.get)
 
@@ -205,8 +208,11 @@ def get_test_problems(test_problems:list[str | int]=[]) -> list[int]:
         else:
             pass
 
-    # TODO: might make sense to remove duplicates and sort the problem ids
-    return test_problems_fixed
+    # remove duplicates and sort the list
+    test_probs = list(set(test_problems_fixed))
+    test_probs.sort()
+
+    return test_probs
 
 
 def get_default_aggregators() -> list[str]:
