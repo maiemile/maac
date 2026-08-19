@@ -1,4 +1,4 @@
-# Modular Automatic Algorithm Configuration (MAAC)
+# Instace-based Automatic Algorithm Configuration (IMAC)
 
 This package offers some tools for per-instance automatic algorithm configuration of multiobjective evolutionary algorithms.
 Ideally, the configurator models created would be able to choose the optimal configuration for any problem based on mathematical features calculated from a small sample.
@@ -62,7 +62,7 @@ There are two types of configurator models. The regression-based models are run 
 The files perform the following pipeline:
 - First, the dataset is loaded and preprocessed. Empty and infinite values are handled.
 - Then, the train/test split is performed. 
-- The train set is used for training the models using the defined hyperparameter optimization regime and cross-validation. 
+- The train set is used for training the models using the defined hyperparameter optimization regime and cross-validation. Currently, grid search is employed.
 - The best model is saved and used for testing. 
 - The testing includes calculating key metrics on the test set. 
 - Moreover, visualizations such as confusion matrices and performance profile plots are created.
@@ -96,9 +96,16 @@ Support for other problems is not planned.
 
 ### TODO: Add new parameters/options
 
-### TODO: Change the experimental structure
+### Change the core experimental structure
 
-### TODO: Change the hyperparameter optimization process
+Changing the core paremeters of the experimental structure is straightforward. Simply specify the desired number of function evaluations and the number of repeats per configuration for each problem instance. These variables can be found in the file main.py with the names "num_of_evaluations" and "num_of_repeats", respectively. Note that these variables are lists to support a different number of repeats for different number of evaluations. For example, one could specify to do runs with 100k evaluations once and with 20k evaluations five times.
+In the above case, these variables would receive the following values:
+- num_of_evaluations = [100000, 20000]
+- num_of_repeats = [1, 5]
+
+### Change the hyperparameter optimization process
+
+If you wish to train different sklearn models (or other models supported by sklearn) or modify the hyperparameter options, simply modify the get_model_data() function in classification_models.py or regressor_models.py, depending on which type of models you use. Make sure to add the parameter grid and the model object. Update the model_dict object accordingly. 
 
 ### TODO: CSC Roihu support
 
