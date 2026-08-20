@@ -125,8 +125,8 @@ def determine_single_best_solver(test_problems:list[int]=[], indicator:str = Non
         average = np.mean(median_list)
         avgs[ea_id] = average
 
-    for k,v in avgs.items():
-        print(k,v)
+    #for k,v in avgs.items():
+    #    print(k,v)
 
     # the SBS is the configuration with the smallest average median 
     sbs = min(avgs, key=avgs.get)

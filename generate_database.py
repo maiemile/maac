@@ -65,18 +65,22 @@ def get_best_config_by_median(indicator:str=None) -> list[list]:
     for row in res:
         prob_ids.append(row[0])
 
-    # temporary solution for calculation the configuration with the best median by problem
-    res = []
+    # temporary solution for finding the configuration with the best median by problem
+    res = {}
     for i in prob_ids:
-        res_prob = []
+        best_ea = None
+        best_indicator = np.inf
         for j in ea_ids:
             res_l = get_median_by_config_and_problem(i, j, indicator)
-            if res_l == None:
-                res_prob.append(99999999)
-            else:
-                res_prob.append(res_l)
-        # add +1 to argmax to get the ID (which start from 1)
-        res.append([np.argmin(np.array(res_prob))+1, np.min(np.array(res_prob))])
+            # ignore None
+            if res_l != None:
+                # if better indicator value, update the vars
+                if res_l < best_indicator:
+                    best_ea = j
+                    best_indicator = res_l
+
+        # add the EA id and the indicator value to the dictionary
+        res[i] = [best_ea, best_indicator]
     
     return res
 

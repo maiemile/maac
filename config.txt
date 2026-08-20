@@ -1,5 +1,5 @@
 [general]
-load_models = False
+load_models = True
 database_file = maac.db
 base_path = None
 indicator = igd

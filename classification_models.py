@@ -256,7 +256,7 @@ def train_models(model:str, model_data, scorer, data):
             param_grid=param_grid,
             cv=kfold,
             scoring=scorer,   # macro F1 averaged across folds
-            verbose=2
+            verbose=1
         )
         grid_search.fit(X_train, y_train)
         print("Best parameters:", grid_search.best_params_)

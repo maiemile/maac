@@ -8,7 +8,7 @@ import pickle
 import os
 from pathlib import Path
 
-from generate_database import get_best_config_by_problem, query_data
+from generate_database import get_best_config_by_median, query_data
 import utils as util
 
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
@@ -62,7 +62,7 @@ def get_model_data() -> dict:
     model_dict = {
         "Random forest": [regr_rf, param_grid_rf], 
         "Decision tree": [regr_dt, param_grid_dt], 
-        #"XGBoost": [regr_xg, param_grid_xg], # TODO: loading XGBoost doesn't work
+        "XGBoost": [regr_xg, param_grid_xg], # TODO: loading XGBoost doesn't work
         "Neural network": [regr_nn, param_grid_nn]
     }
     
@@ -247,7 +247,7 @@ def optimize_models(regr, X_train, y_train, param_grid:dict):
         param_grid=param_grid,
         cv=kfold,
         scoring='neg_mean_absolute_percentage_error', # negative MAPE because grid search tries to maximize the score
-        verbose=2
+        verbose=1
     )
     grid_search.fit(X_train, y_train)
 
@@ -262,7 +262,7 @@ def optimize_models(regr, X_train, y_train, param_grid:dict):
 def run_regression_models(test_problems: list[str], model, data:list,
                               param_grid:dict, model_name: str, response_variable: str, 
                               prob_data:pd.DataFrame, single_best_solver:int, 
-                              load_file:bool=False) -> tuple[float, list[float], list[float]]:
+                              load_file:bool=False) -> tuple[float, list[float], list[float], list[float]]:
     '''
     Train and test the regression model, including hyperparameter optimization using cross-validation.
     Creates confusion matrices of the results.
@@ -302,12 +302,14 @@ def run_regression_models(test_problems: list[str], model, data:list,
 
     print(mse, mpe)
 
+    # TODO: could be a dictionary?
     igd_values = []
     sbs_igd_values = []
+    vbs_igd_values = []
 
     # fetch the optimal configuration for each problem
-    optimal_configs = get_best_config_by_problem()
-
+    optimal_configs = get_best_config_by_median()
+    
     optimal_configs_test = []
     predicted_configs_test = []
 
@@ -330,7 +332,9 @@ def run_regression_models(test_problems: list[str], model, data:list,
             res = query_data(sql)
 
             # and the best configuration parameters (virtual best solver)
-            true_best = optimal_configs[problem-1][1] # TODO: currently assuming that the problems are sorted by problem_id
+            true_best = optimal_configs[problem][0]
+            true_best_igd = optimal_configs[problem][1]
+            vbs_igd_values.append(true_best_igd)
             sql = f'''SELECT {params} FROM eas WHERE ea_id = {true_best}'''
             res_true = query_data(sql)
 
@@ -367,7 +371,7 @@ def run_regression_models(test_problems: list[str], model, data:list,
     # create and save confusion matrices of the predicted parameters of the configurations
     util.create_confusion_matrices(np.asarray(optimal_configs_test), np.asarray(predicted_configs_test), model_name+'_regressor', params_list)
 
-    return mpe, igd_values, sbs_igd_values
+    return mpe, igd_values, sbs_igd_values, vbs_igd_values
 
 
 def do(model_dict: dict = None, configs: list[str] = None, indicator: str = None) -> None:
@@ -417,11 +421,11 @@ def do(model_dict: dict = None, configs: list[str] = None, indicator: str = None
         print("-"*10, model_name, "-"*10)
         
         # run all of the regression models, either with hyperparameter optimization or using existing models
-        mse, igd_values, sbs_igd_values = run_regression_models(test_problems, model, data, param_grid, model_name,
+        mse, igd_values, sbs_igd_values, vbs_igd_values = run_regression_models(test_problems, model, data, param_grid, model_name,
                                                      indicator, problem_data, single_best_solver, load_file=load_models)
-        config_results = [sbs_igd_values, igd_values]
+        config_results = [vbs_igd_values, sbs_igd_values, igd_values]
         # convert to a dataframe
-        configs = ['SBS', model_name + ' regressor']
+        configs = ['VBS', 'SBS', model_name + ' regressor']
         igd_df = pd.DataFrame(np.array(config_results).T, columns=configs)
 
         util.create_performance_profile_plot(igd_df, configs, model_name + '_regressor') 

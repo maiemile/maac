@@ -98,10 +98,6 @@ def calculate_moo_features(X:np.ndarray, y:np.ndarray, nds_indices:list[list[int
     New York, NY, USA, 421–429. https://doi.org/10.1145/3449639.3459353
     '''
 
-    start_time = time.time()
-    timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    process = mp.current_process()
-
     # calculate how many solutions there are per non-dominated front
     samples_per_front = []
     sum_of_ranks = 0
