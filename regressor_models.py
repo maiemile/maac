@@ -62,7 +62,7 @@ def get_model_data() -> dict:
     model_dict = {
         "Random forest": [regr_rf, param_grid_rf], 
         "Decision tree": [regr_dt, param_grid_dt], 
-        "XGBoost": [regr_xg, param_grid_xg], # TODO: loading XGBoost doesn't work
+        "XGBoost": [regr_xg, param_grid_xg], # TODO: loading XGBoost doesn't work sometimes
         "Neural network": [regr_nn, param_grid_nn]
     }
     

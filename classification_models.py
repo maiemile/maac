@@ -1,7 +1,7 @@
 # code by @maiemile
 
 import utils as util
-from generate_database import query_data, get_best_configs_dictionary, get_eas_dictionary
+from generate_database import query_data, get_best_configs_dictionary, get_eas_dictionary, get_best_config_by_median
 
 import sqlite3
 import pandas as pd
@@ -306,7 +306,8 @@ def get_predicted_labels(y_pred_test, enc):
     return y_pred_test_df
 
 
-def get_predicted_igd(test_problems: list[int], problem_data, y_pred, model_name:str, indicator:str, single_best_solver:int) -> list[float]:
+def get_predicted_igd(test_problems: list[int], problem_data, y_pred, model_name:str, 
+                      indicator:str, single_best_solver:int) -> tuple[list[float], list[float], list[float]]:
     '''
     Returns the IGD values of the configurations predicted by the model.
     '''
@@ -320,6 +321,10 @@ def get_predicted_igd(test_problems: list[int], problem_data, y_pred, model_name
     predicted_configs_test = []
     igd_values = []
     sbs_igd_values = []
+    vbs_igd_values = []
+
+    # fetch the optimal configuration for each problem
+    optimal_configs = get_best_config_by_median()
 
     for problem in test_problems:
         seed = 1
@@ -333,6 +338,11 @@ def get_predicted_igd(test_problems: list[int], problem_data, y_pred, model_name
 
             # get the EA id of the best config
             ea_id = best_config["ea_id"].item()
+
+            # and the best configuration (virtual best solver)
+            #true_best = optimal_configs[problem][0]
+            true_best_igd = optimal_configs[problem][1]
+            vbs_igd_values.append(true_best_igd)
 
             # get the parameters of the best config
             sql = f'''SELECT {','.join(params)} FROM eas WHERE ea_id = {ea_id}'''
@@ -374,7 +384,7 @@ def get_predicted_igd(test_problems: list[int], problem_data, y_pred, model_name
     # create and save confusion matrices of the predicted parameters of the configurations
     util.create_confusion_matrices(np.asarray(optimal_configs_test), np.asarray(predicted_configs_test), model_name + '_classifier', params)
 
-    return igd_values, sbs_igd_values
+    return igd_values, sbs_igd_values, vbs_igd_values
 
 
 def do(model_dict: dict = None, configs: list[str] = None, indicator: str = None) -> None:
@@ -449,11 +459,12 @@ def do(model_dict: dict = None, configs: list[str] = None, indicator: str = None
         y_pred_test_df = get_predicted_labels(y_pred_test, encs)
 
         # get the IGD values achieved by the predictions and the SBS
-        igd_values, sbs_igd_values = get_predicted_igd(test_problems, problem_data, y_pred_test_df, model_name, indicator, single_best_solver)
-        config_results = [sbs_igd_values, igd_values]
+        igd_values, sbs_igd_values, vbs_igd_values = get_predicted_igd(test_problems, problem_data, y_pred_test_df, 
+                                                                       model_name, indicator, single_best_solver)
+        config_results = [vbs_igd_values, sbs_igd_values, igd_values]
 
         # convert results to a dataframe
-        configs = ['SBS', model_name + ' classifier']
+        configs = ['VBS', 'SBS', model_name + ' classifier']
         igd_df = pd.DataFrame(np.array(config_results).T, columns=configs)
         
         # display a proper performance profile plot comparing the configurator against the single best solver
