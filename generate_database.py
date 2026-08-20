@@ -6,8 +6,6 @@ import re
 import utils as util
 import numpy as np
 
-# TODO: when new parameter options are given, create new columns, unique must be updated
-
 pattern = "^[A-Za-z0-9_-]*$"
 
 # Load the filename of the database
@@ -23,10 +21,14 @@ def get_number_of_rows(table:str) -> int:
     return res[0]
 
 
-def get_median_by_config_and_problem(problem_id:int, ea_id:int, indicator:str="igd") -> float:
+def get_median_by_config_and_problem(problem_id:int, ea_id:int, indicator:str=None) -> float:
     '''
     Get the median indicator value achieved across runs for the given problem and configuration
     '''
+
+    if indicator == None:
+        # Load the default indicator
+        indicator = util.load_param_config('indicator')
     
     sql = f'''SELECT AVG({indicator})
             FROM (SELECT {indicator}
@@ -40,10 +42,14 @@ def get_median_by_config_and_problem(problem_id:int, ea_id:int, indicator:str="i
     return res_l[0]
 
 
-def get_best_config_by_median(indicator:str="igd") -> list[list]:
+def get_best_config_by_median(indicator:str=None) -> list[list]:
     '''
     Get the best configuration for each problem by the median indicator value
     '''
+
+    if indicator == None:
+        # Load the default indicator
+        indicator = util.load_param_config('indicator')
 
     # load all EA ids
     sql = '''SELECT ea_id FROM eas'''
@@ -75,10 +81,15 @@ def get_best_config_by_median(indicator:str="igd") -> list[list]:
     return res
 
 
-def get_average_indicator(indicator:str="igd") -> list[tuple]:
+def get_average_indicator(indicator:str=None) -> list[tuple]:
     '''
     Returns a list of tuples with the average indicator value for each configuration and problem pair across all runs.
     '''
+
+    if indicator == None:
+        # Load the default indicator
+        indicator = util.load_param_config('indicator')
+
     sql = f'''SELECT p.problem_id, e.ea_id, AVG(r.{indicator}) FROM runs r, problems p, eas e
     WHERE p.problem_id = r.problem_id
     AND r.ea_id = e.ea_id GROUP BY p.problem_id, e.ea_id'''
@@ -87,10 +98,15 @@ def get_average_indicator(indicator:str="igd") -> list[tuple]:
     return res
 
 
-def get_best_config_by_problem(indicator:str="igd") -> list[tuple]:
+def get_best_config_by_problem(indicator:str=None) -> list[tuple]:
     '''
     Returns a tuple with the best EA configuration for the given problem as measured by the average value of the indicator.
     '''
+
+    if indicator == None:
+        # Load the default indicator
+        indicator = util.load_param_config('indicator')
+
     sql = f'''SELECT problem, EA, MIN(average_igd) 
     FROM (SELECT AVG(r.{indicator}) AS average_igd, p.problem_id AS problem, e.ea_id AS EA
     FROM runs r, problems p, eas e 
@@ -102,10 +118,14 @@ def get_best_config_by_problem(indicator:str="igd") -> list[tuple]:
     return res
 
 
-def get_best_configs_dictionary(indicator:str="igd") -> dict:
+def get_best_configs_dictionary(indicator:str=None) -> dict:
     '''
     Converts the best configuration by problem into a dictionary
     '''
+
+    if indicator == None:
+        # Load the default indicator
+        indicator = util.load_param_config('indicator')
 
     data = get_best_config_by_problem(indicator)
     data_dict = {}
@@ -429,4 +449,5 @@ def do(setup: util.ExperimentalSetup, indicators:list[str]=None, n_of_repeats:li
 
 
 if __name__ == "__main__":
+    # TODO: missing setup
     do(n_of_repeats=[1], target_evals=[1000])
