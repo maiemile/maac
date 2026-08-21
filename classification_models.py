@@ -1,7 +1,7 @@
 # code by @maiemile
 
 import utils as util
-from generate_database import query_data, get_best_configs_dictionary, get_eas_dictionary, get_best_config_by_median
+from generate_database import query_data, get_eas_dictionary, get_best_config_by_median
 
 import sqlite3
 import pandas as pd
@@ -23,6 +23,8 @@ from sklearn.neural_network import MLPClassifier
 
 # Fetch the information on whether to load pre-existing models (True) or train new ones (False)
 load_models = bool(util.load_param_config('load_models'))
+clf_name = str(util.load_param_config('classifier_name'))
+
 # Load the filename of the database and the base path
 database = util.load_param_config('database_file')
 
@@ -237,7 +239,7 @@ def train_models(model:str, model_data, scorer, data):
     X_train, X_test, y_train, y_test = data
     if load_models:
         #load the model
-        with open(Path(f'models/{model}_classifier.pkl'), 'rb') as f:
+        with open(Path(f'models/{model}_classifier{clf_name}.pkl'), 'rb') as f:
             clf2 = pickle.load(f)
         best_estimator = clf2
     else:
@@ -262,8 +264,8 @@ def train_models(model:str, model_data, scorer, data):
         print("Best parameters:", grid_search.best_params_)
         print("Best CV score (macro F1):", grid_search.best_score_)
 
-        #save the model
-        with open(Path(f'models/{model}_classifier.pkl'),'wb') as f:
+        # Save the model
+        with open(Path(f'models/{model}_classifier{clf_name}.pkl'),'wb') as f:
             pickle.dump(grid_search.best_estimator_,f)
 
         best_estimator = grid_search.best_estimator_
@@ -416,7 +418,7 @@ def do(model_dict: dict = None, configs: list[str] = None, indicator: str = None
         problem_ids = df['problem_id']
 
         # get the best configuration by problem
-        best_configs = get_best_configs_dictionary(indicator)
+        best_configs = get_best_config_by_median(indicator) # TODO: use the median instead of average
         data_best = []
         for id in problem_ids:
             data_best.append(best_configs[id])

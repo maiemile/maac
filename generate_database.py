@@ -122,23 +122,6 @@ def get_best_config_by_problem(indicator:str=None) -> list[tuple]:
     return res
 
 
-def get_best_configs_dictionary(indicator:str=None) -> dict:
-    '''
-    Converts the best configuration by problem into a dictionary
-    '''
-
-    if indicator == None:
-        # Load the default indicator
-        indicator = util.load_param_config('indicator')
-
-    data = get_best_config_by_problem(indicator)
-    data_dict = {}
-    for row in data:
-        data_dict[row[0]] = row[1:]
-
-    return data_dict
-
-
 def get_eas_dictionary() -> dict:
     '''
     Get a dictionary of EAs, the key is the ID and the value

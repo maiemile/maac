@@ -21,6 +21,7 @@ from sklearn.metrics import (r2_score, mean_squared_error, mean_squared_log_erro
 
 # Fetch the information on whether to load pre-existing models (True) or train new ones (False)
 load_models = bool(util.load_param_config('load_models'))
+regr_name = str(util.load_param_config('regressor_name'))
 # Load the filename of the database and the base path
 database = util.load_param_config('database_file')
 
@@ -285,14 +286,14 @@ def run_regression_models(test_problems: list[str], model, data:list,
 
     if load_file:
         # Load the model
-        with open(Path(f'models/{model_name}_regressor.pkl'), 'rb') as f:
+        with open(Path(f'models/{model_name}_regressor{regr_name}.pkl'), 'rb') as f:
             best_estimator = pickle.load(f)
     else:
         # do hyperparameter optimization for the chosen regressor model
         best_estimator = optimize_models(regr, X_train, y_train, param_grid)
     
         # save the model
-        with open(Path(f'models/{model_name}_regressor.pkl'),'wb') as f:
+        with open(Path(f'models/{model_name}_regressor{regr_name}.pkl'),'wb') as f:
             pickle.dump(best_estimator,f)
 
     # Calculate MSE on the test data

@@ -1,6 +1,7 @@
 # Code by @maiemile
 
-from desdeo.tools.indicators_unary import hv, igd_plus_indicator, distance_indicators
+from desdeo.tools.indicators_unary import igd_plus_indicator, distance_indicators
+from moocore import avg_hausdorff_dist
 from pathlib import Path
 import numpy as np
 import pandas as pd
@@ -58,7 +59,8 @@ def calc_ind_val_problem(run_id:int, problem_id:int, indicators:list[str], ind_v
             ind_val = distance_indicators(normalized_archive, normalized_pf_approx).igd
         if indicator == "igd_plus":
             ind_val = igd_plus_indicator(normalized_archive, normalized_pf_approx).igd_plus
-
+        if indicator == "ahd":
+            ind_val = avg_hausdorff_dist(normalized_archive, normalized_pf_approx)
         ind_res[indicator] = ind_val
 
     # create the update statement

@@ -77,7 +77,7 @@ In addition to the above, the R^2 scores are calculated for the random forest re
 
 By default, MAAC uses IGD as the performance indicator. If you wish to change the indicator, change the "indicator" field in config.txt.
 Furthermore, if you wish to calculate multiple indicators, TODO:
-Currently supported indicators (use the name in the brackets): IGD (igd), IGD+ (igd_plus).
+Currently supported indicators (use the name in the brackets): IGD (igd), IGD+ (igd_plus), Average Hausdorff distance, also known as delta_p (ahd).
 Guide for adding other indicators is TODO:
 Note that the code currently only supports indicators which are to be **minimized**.
 
@@ -113,6 +113,16 @@ If you wish to train different sklearn models (or other models supported by skle
 
 ### TODO: CSC Roihu support
 
+The code can be run on CSC Roihu with the customized shell scripts.
+First, setup Roihu using the [official guide](https://docs.csc.fi/support/tutorials/roihu/).
+In order to run a file, use the designated scripts TODO:.
+
+Use the command 
+```
+sbatch FILE_NAME.sh
+```
+to run a script.
+
 # Old guide
 
-If you wish to use the old version of the package, download the earliest available version and have a look at the README.md file.
+If you wish to use the old version of the package without the database integration, flexible data structures and configuration, download the earliest available version of this repository and have a look at the README.md file.
