@@ -24,7 +24,7 @@ def calc_ind_val_problem(run_id:int, problem_id:int, indicators:list[str], ind_v
 
     try:
         path = Path(BASE_PATH + 'approx_pfs/' + str(problem_id) + '.csv')
-        pf_approx = np.array(pd.read_csv(path))
+        pf_approx = np.array(pd.read_csv(path), header=None)
     except:
         # PF approximation doesn't exist, skip
         return
@@ -40,7 +40,7 @@ def calc_ind_val_problem(run_id:int, problem_id:int, indicators:list[str], ind_v
     try:
         # fetch the archive if it exists
         path = Path(BASE_PATH + 'archived_pops/' + str(run_id) + '.csv')
-        archive = np.array(pd.read_csv(path))
+        archive = np.array(pd.read_csv(path), header=None)
     except:
         return
 
@@ -74,9 +74,9 @@ def calc_ind_val_problem(run_id:int, problem_id:int, indicators:list[str], ind_v
     values.append(run_id)
     insert_data(sql, [values])
 
-    sql_query = f'''SELECT {indicators[0]} FROM runs WHERE run_id = {run_id}'''
-    res = query_data(sql_query)
-    logger.info(res[0])
+    #sql_query = f'''SELECT {indicators[0]} FROM runs WHERE run_id = {run_id}'''
+    #res = query_data(sql_query)
+    #logger.info(res[0])
 
 
 def do(indicators:list[str]=None) -> None:

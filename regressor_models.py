@@ -400,8 +400,10 @@ def do(model_dict: dict = None, configs: list[str] = None, indicator: str = None
     # Combine data from runs and features tables into one pandas dataframe
     try:  
         con = sqlite3.connect(database)
-        sql = f"""SELECT f.*, r.ea_id, r.{indicator} FROM features f 
-                    JOIN runs r ON r.problem_id = f.problem_id AND r.seed = f.seed WHERE r.{indicator} IS NOT NULL"""
+        sql = f"""SELECT f.*, r.ea_id, r.{indicator}, p.obj, p.var FROM features f 
+                    JOIN runs r ON r.problem_id = f.problem_id AND r.seed = f.seed 
+                    JOIN problems p on p.problem_id = f.problem_id 
+                    WHERE r.{indicator} IS NOT NULL"""
         df = pd.read_sql_query(sql, con)
     except sqlite3.Error as e:
         print(e)

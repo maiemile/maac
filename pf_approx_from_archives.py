@@ -48,7 +48,7 @@ def calc_pf_approx(problem_id:int, pf_approx_size:int=None) -> None:
         # load the archived non-dominated solutions of the run if they exist
         try:
             path = Path(BASE_PATH + 'archived_pops/' + str(run_id) + '.csv')
-            pf2 = np.array(pd.read_csv(path))
+            pf2 = np.array(pd.read_csv(path), header=None)
         except:
             continue
 

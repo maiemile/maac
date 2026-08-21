@@ -413,12 +413,13 @@ def do(model_dict: dict = None, configs: list[str] = None, indicator: str = None
     # Combine data from runs and features tables into one pandas dataframe
     try:  
         con = sqlite3.connect(database)
-        sql = f"""SELECT * FROM features"""
+        sql = f"""SELECT f.*, p.obj, p.var FROM features f, problems p
+                WHERE f.problem_id = p.problem_id"""
         df = pd.read_sql_query(sql, con)
         problem_ids = df['problem_id']
 
         # get the best configuration by problem
-        best_configs = get_best_config_by_median(indicator) # TODO: use the median instead of average
+        best_configs = get_best_config_by_median(indicator)
         data_best = []
         for id in problem_ids:
             data_best.append(best_configs[id])
